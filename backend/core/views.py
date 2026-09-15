@@ -1,29 +1,27 @@
 """
-SafeSpace read-only API views.
+SafeSpace read-only API views + deterministic safety endpoint.
 
-All endpoints are GET-only. No write operations are exposed.
+All knowledge/support/action endpoints are GET-only.
+The safety endpoint accepts POST but does not persist user messages.
 
-Filtering rules enforce the trust model:
-  - Only active Journeys and Topics are returned.
-  - Only active AND VERIFIED RightsRecords are returned.
-  - Archived, expired, and review-required records never appear in
-    normal user-facing responses (ADR-002, FR-19, FR-20).
-
-URL design note:
-  Topic slugs are unique within a Journey, not globally (see the
-  unique_topic_slug_per_journey constraint). The rights-list endpoint
-  therefore uses the full journey+topic path to resolve topics
-  unambiguously, consistent with the data model design.
+Trust filtering rules:
+  - Journeys, Topics: active=True
+  - RightsRecords, ActionPaths: active=True AND status=VERIFIED
+  - SupportServices: active=True AND status=VERIFIED
+  - Unverified/inactive content never appears in public responses.
 """
 
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework import status as http_status
 
-from .models import Journey, RightsRecord, Topic
+from .models import Journey, RightsRecord, RiskRule, SupportService, Topic, ActionPath
 from .serializers import (
+    ActionPathSerializer,
     JourneySerializer,
     RightsRecordSerializer,
+    SupportServiceSerializer,
     TopicSerializer,
 )
 
@@ -34,15 +32,9 @@ from .serializers import (
 
 @api_view(["GET"])
 def journey_list(request):
-    """
-    Return all active Journeys.
-
-    Only active journeys are returned — inactive journeys are hidden from
-    users while remaining manageable in the admin.
-    """
+    """Return all active Journeys."""
     journeys = Journey.objects.filter(active=True)
-    serializer = JourneySerializer(journeys, many=True)
-    return Response(serializer.data)
+    return Response(JourneySerializer(journeys, many=True).data)
 
 
 # ---------------------------------------------------------------------------
@@ -51,16 +43,10 @@ def journey_list(request):
 
 @api_view(["GET"])
 def topic_list(request, journey_slug):
-    """
-    Return all active Topics for a given Journey slug.
-
-    Returns 404 if the Journey does not exist or is not active.
-    Topics are ordered by sort_order then title (defined in Topic.Meta).
-    """
+    """Return active Topics for a given active Journey."""
     journey = get_object_or_404(Journey, slug=journey_slug, active=True)
     topics  = Topic.objects.filter(journey=journey, active=True)
-    serializer = TopicSerializer(topics, many=True)
-    return Response(serializer.data)
+    return Response(TopicSerializer(topics, many=True).data)
 
 
 # ---------------------------------------------------------------------------
@@ -70,27 +56,16 @@ def topic_list(request, journey_slug):
 @api_view(["GET"])
 def rights_list(request, journey_slug, topic_slug):
     """
-    Return all verified and active RightsRecords for a topic within a journey.
-
-    Both journey and topic must be active. The topic is resolved using the
-    combination of journey_slug + topic_slug, which matches the database
-    constraint (unique_topic_slug_per_journey). This prevents ambiguity when
-    the same topic slug exists in multiple journeys.
-
-    Filtering is strict:
-      active=True       — unpublished records are excluded
-      status=VERIFIED   — review-required, expired, archived records excluded
+    Return verified active RightsRecords for a topic within a journey.
+    Topic is resolved using journey+slug to respect the unique-per-journey
+    slug constraint.
     """
     journey = get_object_or_404(Journey, slug=journey_slug, active=True)
     topic   = get_object_or_404(Topic, slug=topic_slug, journey=journey, active=True)
     rights  = RightsRecord.objects.filter(
-        topic=topic,
-        journey=journey,
-        active=True,
-        status="VERIFIED",
+        topic=topic, journey=journey, active=True, status="VERIFIED"
     ).select_related("journey", "topic", "source")
-    serializer = RightsRecordSerializer(rights, many=True)
-    return Response(serializer.data)
+    return Response(RightsRecordSerializer(rights, many=True).data)
 
 
 # ---------------------------------------------------------------------------
@@ -100,15 +75,8 @@ def rights_list(request, journey_slug, topic_slug):
 @api_view(["GET"])
 def rights_detail(request, record_code):
     """
-    Return a single verified and active RightsRecord by its stable record_code.
-
-    Returns 404 if:
-      - the record_code does not exist
-      - the record is inactive
-      - the record status is not VERIFIED
-
-    Knowing a record_code cannot be used to retrieve unverified content.
-    The nested LegalSource ensures every response carries a full citation.
+    Return a single verified active RightsRecord by record_code.
+    Returns 404 for non-existent, inactive, or unverified records.
     """
     record = get_object_or_404(
         RightsRecord.objects.select_related("journey", "topic", "source"),
@@ -116,5 +84,100 @@ def rights_detail(request, record_code):
         active=True,
         status="VERIFIED",
     )
-    serializer = RightsRecordSerializer(record)
-    return Response(serializer.data)
+    return Response(RightsRecordSerializer(record).data)
+
+
+# ---------------------------------------------------------------------------
+# GET /api/v1/support-services/
+# ---------------------------------------------------------------------------
+
+@api_view(["GET"])
+def support_service_list(request):
+    """
+    Return all active VERIFIED support services.
+    Unverified, archived, expired and inactive services are excluded.
+    """
+    services = SupportService.objects.filter(active=True, status="VERIFIED")
+    return Response(SupportServiceSerializer(services, many=True).data)
+
+
+# ---------------------------------------------------------------------------
+# GET /api/v1/journeys/<journey_slug>/topics/<topic_slug>/actions/
+# ---------------------------------------------------------------------------
+
+@api_view(["GET"])
+def action_list(request, journey_slug, topic_slug):
+    """
+    Return verified active ActionPaths for a topic within a journey,
+    ordered by step_number.
+
+    Journey and topic must both be active. Linked SupportService is
+    exposed only when it is itself active and VERIFIED.
+    """
+    journey = get_object_or_404(Journey, slug=journey_slug, active=True)
+    topic   = get_object_or_404(Topic, slug=topic_slug, journey=journey, active=True)
+    actions = ActionPath.objects.filter(
+        topic=topic, active=True, status="VERIFIED"
+    ).select_related("topic", "support_service", "source").order_by("step_number")
+    return Response(ActionPathSerializer(actions, many=True).data)
+
+
+# ---------------------------------------------------------------------------
+# POST /api/v1/safety/check/
+# ---------------------------------------------------------------------------
+
+_RISK_ORDER = {"IMMEDIATE": 4, "HIGH": 3, "MEDIUM": 2, "LOW": 1}
+
+_DEFAULT_RESPONSE = {
+    "risk_level": "LOW",
+    "action":     "NORMAL_FLOW",
+    "matched_rule": None,
+}
+
+
+@api_view(["POST"])
+def safety_check(request):
+    """
+    Deterministic safety classification.
+
+    Accepts: { "message": "..." }
+    Returns: { "risk_level": "...", "action": "...", "matched_rule": "..." }
+
+    Process:
+    1. Validates that a non-empty message string is provided.
+    2. Evaluates all active RiskRules ordered by priority (highest first).
+    3. Among matching rules, selects the one with the highest risk severity.
+    4. Returns the result without persisting the message.
+
+    The message is NOT logged or stored. No user record is created.
+    This endpoint does not make legal determinations.
+    """
+    message = request.data.get("message", "")
+
+    if not isinstance(message, str) or not message.strip():
+        return Response(
+            {"error": "A non-empty 'message' string is required."},
+            status=http_status.HTTP_400_BAD_REQUEST,
+        )
+
+    # Evaluate active rules, highest priority first
+    active_rules = RiskRule.objects.filter(active=True).order_by("-priority", "name")
+
+    best_match = None
+    best_severity = 0
+
+    for rule in active_rules:
+        if rule.matches(message):
+            severity = _RISK_ORDER.get(rule.risk_level, 0)
+            if severity > best_severity:
+                best_severity = severity
+                best_match = rule
+
+    if best_match is None:
+        return Response(_DEFAULT_RESPONSE)
+
+    return Response({
+        "risk_level":    best_match.risk_level,
+        "action":        best_match.action,
+        "matched_rule":  best_match.name,
+    })

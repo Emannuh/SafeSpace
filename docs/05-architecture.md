@@ -2,129 +2,112 @@
 
 ## Architecture Goal
 
-SafeSpace should provide AI-assisted explanations without allowing the AI model to become the source of legal truth.
+SafeSpace provides AI-assisted explanations without allowing the AI model to become the source of legal truth.
 
 The system follows the principle:
 
-Verified Source
-↓
-Structured Rights Record
-↓
-Controlled Retrieval
-↓
-AI Explanation
-↓
-Source Citation
-↓
-Next Action
+Verified Source → Structured Rights Record → Controlled Retrieval → AI Explanation → Source Citation → Next Action
+
+## Updated Architecture (Day 3)
+
+```
+                  USER
+                    |
+                    v
+             Future Frontend
+                    |
+                    v
+              Django API (/api/v1/)
+                    |
+       +------------+-------------+-----------+
+       |            |             |           |
+       v            v             v           v
+ Rights Layer   Action Layer  Support    Safety Layer
+       |            |          Layer          |
+       v            v             |           v
+RightsRecord   ActionPath    SupportService  RiskRule
+LegalSource    (optional     (verified       (deterministic
+               source)        contacts)       pattern match)
+       \            |             /           /
+        \           |            /           /
+         +----------+-----------+-----------+
+                    |
+                    v
+                PostgreSQL
+
+No AI yet. AI layer is planned for Day 4+.
+```
 
 ## High-Level Components
 
 ### Frontend
 
-Responsibilities:
+Responsibilities: mobile-first UI, journey selection, question submission, display of rights information, sources, support services, safety routing, language selection, Quick Exit.
 
-- mobile-first user interface
-- journey selection
-- question submission
-- display of rights information
-- display of sources
-- display of support services
-- language selection
-- Quick Exit
+Proposed technology: Next.js and Tailwind CSS
 
-Proposed technology:
-
-Next.js and Tailwind CSS
+Status: Not yet implemented.
 
 ### Backend API
 
-Responsibilities:
+Responsibilities: expose journey/topic/rights/action/support data, process safety classification, prepare grounded AI context (future), return structured responses.
 
-- expose journey and topic data
-- retrieve rights records
-- manage support services
-- process user questions
-- perform safety routing
-- prepare grounded AI context
-- return structured responses
+Proposed technology: Django and Django REST Framework
 
-Proposed technology:
-
-Django and Django REST Framework
+Status: Read-only API operational. Safety endpoint operational.
 
 ### Knowledge Database
 
-Responsibilities:
+Responsibilities: store journeys, topics, legal sources, rights records, support services, action pathways, risk rules, translations (future).
 
-- store journeys
-- store legal topics
-- store verified sources
-- store rights records
-- store support services
-- store action pathways
-- store translations
-- store risk rules
+Proposed technology: PostgreSQL
 
-Proposed technology:
-
-PostgreSQL
+Status: All Day 3 tables live.
 
 ### Safety Engine
 
-Responsibilities:
+Responsibilities: classify risk level, identify immediate danger, bypass ordinary AI flows when necessary, expose emergency support pathways.
 
-- classify risk
-- identify immediate danger
-- bypass ordinary AI flows when necessary
-- expose emergency support pathways
+Current MVP approach: deterministic RiskRule pattern matching.
 
-Proposed MVP approach:
+Future enhancement: AI-assisted classification.
 
-deterministic safety rules plus AI-assisted classification
+Status: Deterministic safety endpoint operational at POST /api/v1/safety/check/.
 
 ### Retrieval Layer
 
-Responsibilities:
+Responsibilities: map user questions to relevant topics, retrieve best matching verified records.
 
-- map user questions to relevant topics
-- retrieve the best matching verified records
-- return only validated content to the AI layer
+Current approach: structured database filtering.
 
-Initial approach:
+Future enhancement: semantic search using pgvector.
 
-structured database filtering
+Status: Structured filtering in place.
 
-Future enhancement:
+### AI Layer (Day 4+)
 
-semantic search using pgvector
+Responsibilities: simplify complex legal language, explain verified rights information, support multilingual explanation.
 
-### AI Layer
+The AI layer must not: invent laws, invent procedures, invent support institutions, determine guilt or innocence.
 
-Responsibilities:
-
-- simplify complex legal language
-- explain verified rights information
-- classify intent where appropriate
-- support multilingual explanation
-
-The AI layer must not:
-
-- invent laws
-- invent legal procedures
-- invent support institutions
-- determine guilt or innocence
+Status: Not yet implemented.
 
 ## Failure Behaviour
 
-If AI is unavailable:
+If AI is unavailable: SafeSpace still displays structured legal content.
 
-SafeSpace should still display structured legal content.
+If no verified information exists: SafeSpace clearly states it does not have verified information.
 
-If no verified information exists:
+If immediate danger is detected: SafeSpace prioritises safety and support information before legal explanation.
 
-SafeSpace should clearly state that it does not currently have verified information for the request.
+## API Endpoints (Day 3)
 
-If immediate danger is detected:
-
-SafeSpace should prioritise safety and support information before normal legal explanation.
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | /api/v1/journeys/ | List active journeys |
+| GET | /api/v1/journeys/<slug>/topics/ | List active topics in a journey |
+| GET | /api/v1/journeys/<slug>/topics/<slug>/rights/ | Verified rights records |
+| GET | /api/v1/journeys/<slug>/topics/<slug>/actions/ | Verified action steps |
+| GET | /api/v1/rights/<record_code>/ | Single rights record |
+| GET | /api/v1/support-services/ | Active verified support services |
+| POST | /api/v1/safety/check/ | Deterministic risk classification |

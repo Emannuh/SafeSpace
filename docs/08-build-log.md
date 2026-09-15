@@ -17,20 +17,13 @@
 
 ### AI Coding Usage
 
-Kiro was used as an AI coding assistant to:
-- scaffold the initial Django backend
-- create the Python development environment
-- configure project dependencies
-- configure environment-based settings
-- create the initial Django application structure
+Kiro was used as an AI coding assistant to scaffold the initial Django backend, create the Python development environment, configure project dependencies, configure environment-based settings, and create the initial Django application structure.
 
-AI-generated changes were reviewed before proceeding to the next development stage.
+AI-generated changes were reviewed before proceeding.
 
-### Current Status
+### Current Status at end of Day 1
 
-Backend foundation complete.
-
-No SafeSpace business models, API endpoints, AI integration, or frontend functionality have been implemented yet.
+Backend foundation complete. No business models, API endpoints, AI integration, or frontend functionality.
 
 ---
 
@@ -44,30 +37,17 @@ No SafeSpace business models, API endpoints, AI integration, or frontend functio
 - Generated and reviewed migration `core/migrations/0001_initial.py`.
 - Diagnosed and resolved PostgreSQL authentication configuration on local development machine.
 - Developer reset PostgreSQL superuser credentials, created the `safespace` database, and confirmed connectivity.
-- Applied all Django migrations successfully to the `safespace` PostgreSQL database.
+- Applied all Django migrations successfully.
 
 ### AI Coding Usage
 
-Kiro was used to:
-- implement all four knowledge-base models in `core/models.py`
-- generate the initial migration file
-- diagnose the PostgreSQL authentication failure
-- update `pg_hba.conf` auth method to enable the password reset
-- revert `pg_hba.conf` after the reset was complete
-- update `backend/.env` with the correct database credentials
+Kiro implemented models, generated migration, diagnosed PostgreSQL auth failure, updated pg_hba.conf, and reverted after reset.
 
-Developer actions included:
-- reviewing the generated models before applying migrations
-- executing the PostgreSQL service restart (required Administrator privileges)
-- running the `ALTER USER` password reset command
-- creating the `safespace` database
-- confirming the migration output before proceeding
+Developer actions: reviewed models before applying migrations, executed PostgreSQL service restart (Administrator required), ran ALTER USER password reset, created safespace database.
 
 ### Current Status
 
-Database fully migrated. Core knowledge-base schema is live in PostgreSQL.
-
-No API endpoints, AI integration, seed data, superuser, or frontend functionality have been implemented yet.
+Database migrated. Core schema live. No API endpoints yet.
 
 ---
 
@@ -75,123 +55,151 @@ No API endpoints, AI integration, seed data, superuser, or frontend functionalit
 
 ### Objective
 
-Build the first usable SafeSpace trusted knowledge API: register models in the Django admin, create read-only serializers, implement journey-scoped API endpoints with backend trust filtering, write automated tests, and load a small verified demonstration knowledge record.
+Build the first usable SafeSpace trusted knowledge API.
 
 ### Completed
 
-#### Django Admin
+- Registered Journey, Topic, LegalSource, RightsRecord in Django Admin with editorial workflow configuration.
+- Created read-only serializers in `core/serializers.py`.
+- Implemented four read-only API endpoints.
+- Created `core/urls.py`, updated `safespace_backend/urls.py`.
+- Written 29 automated tests — all passing.
+- Created `core/management/commands/seed_demo.py`.
+- Loaded one verified demonstration RightsRecord: CJ-001 (Constitution of Kenya, Article 49).
 
-- Registered Journey, Topic, LegalSource, and RightsRecord in `core/admin.py`.
-- Added `list_display`, `list_filter`, `search_fields`, `ordering`, `prepopulated_fields`, `autocomplete_fields`, `readonly_fields`, `date_hierarchy`, and `fieldsets` to each admin class.
-- Admin configured to support the editorial workflow: adding/updating rights records (FR-16), updating verification dates (FR-17), and deactivating outdated content (FR-18).
+### Endpoints (Day 2)
 
-#### Serializers
-
-- Created `core/serializers.py` with read-only serializers for Journey, Topic, LegalSource (nested), and RightsRecord.
-- LegalSource is embedded inline within RightsRecord responses — every rights response carries a full citation.
-- Human-readable display values added for source_type, risk_level, and status using `get_*_display` fields.
-- Navigation slugs (journey_slug, topic_slug) included in RightsRecord to support frontend breadcrumb rendering.
-- No write operations exposed.
-
-#### API Endpoints
-
-- Created `core/urls.py` and updated `safespace_backend/urls.py` to include routes under `/api/v1/`.
-- Implemented four read-only endpoints in `core/views.py`:
-
-| Endpoint | Purpose |
+| Method | Endpoint |
 |---|---|
-| `GET /api/v1/journeys/` | List active journeys |
-| `GET /api/v1/journeys/<journey_slug>/topics/` | List active topics within a journey |
-| `GET /api/v1/journeys/<journey_slug>/topics/<topic_slug>/rights/` | List verified rights records for a topic within a journey |
-| `GET /api/v1/rights/<record_code>/` | Single verified rights record by code |
+| GET | /api/v1/journeys/ |
+| GET | /api/v1/journeys/<slug>/topics/ |
+| GET | /api/v1/journeys/<slug>/topics/<slug>/rights/ |
+| GET | /api/v1/rights/<record_code>/ |
 
-- Topic rights use the journey-scoped URL to resolve topic slugs unambiguously (consistent with the `unique_topic_slug_per_journey` constraint).
+### Test results
 
-#### Trust Filtering
-
-Backend enforces:
-- Journeys: `active=True` only.
-- Topics: `active=True`, scoped to the requested active journey.
-- RightsRecords: `active=True AND status=VERIFIED` only.
-- ARCHIVED, EXPIRED, REVIEW_REQUIRED and inactive records return 404 at both list and detail endpoints.
-
-#### Automated Tests
-
-- 29 automated tests written in `core/tests.py`.
-- All 29 tests pass.
-- Test run time: ~0.9 seconds.
-- Tests cover: active/inactive journey filtering, inactive topic exclusion, journey-scoped duplicate slug handling, VERIFIED/ARCHIVED/EXPIRED/REVIEW_REQUIRED/inactive filtering, cross-journey record leak prevention, source provenance in responses, 404 behaviour.
-
-#### Demonstration Seed Data
-
-- Created `core/management/commands/seed_demo.py` — idempotent Django management command.
-- Loaded one verified demonstration knowledge record grounded in `docs/03-legal-framework.md`:
-  - Journey: Child Justice
-  - Topic: Arrest Rights
-  - LegalSource: Constitution of Kenya (Kenya Law)
-  - RightsRecord [CJ-001]: Right to be informed of the reason for arrest (Article 49)
-- A management command was chosen over a Django fixture because it is self-documenting, allows data integrity validation at load time, and is easier to review than a JSON fixture.
-- Seed data is verified by the API at: `GET /api/v1/journeys/child-justice/topics/arrest-rights/rights/`
-
-### Files Created
-
-- `backend/core/serializers.py`
-- `backend/core/urls.py`
-- `backend/core/management/__init__.py`
-- `backend/core/management/commands/__init__.py`
-- `backend/core/management/commands/seed_demo.py`
-
-### Files Modified
-
-- `backend/core/admin.py` — rewritten from stub to full admin configuration
-- `backend/core/views.py` — rewritten from stub to four read-only API views
-- `backend/core/tests.py` — rewritten from stub to 29 automated tests
-- `backend/safespace_backend/urls.py` — updated to include `api/v1/` routes
-- `docs/08-build-log.md` — this file
-
-### Test Results
-
-```
-Ran 29 tests in 0.928s
-OK
-```
-
-Django system check: 0 issues.
-
-### Issues Encountered
-
-- The previous iteration of the rights-list endpoint used `topics/<slug>/rights/` without journey context. This was corrected to `journeys/<journey_slug>/topics/<topic_slug>/rights/` to properly enforce the data model's journey-scoped topic slug uniqueness.
-
-### Architectural Decisions
-
-- Topic rights URL uses full journey + topic path to match the database constraint (ADR-003).
-- `on_delete=PROTECT` retained on all ForeignKeys — prevents accidental cascade deletion of knowledge base content.
-- Trust filtering enforced in Django views/QuerySets, not in serializers or frontend — consistent with ADR-002.
-- Seed data loaded via management command, not migration, to keep schema migrations separate from business content.
+29/29 tests passing.
 
 ### AI Coding Usage
 
-Kiro was used to:
-- implement admin classes with editorial workflow features
-- write serializers with nested source provenance
-- implement journey-scoped API views with trust filtering
-- write 29 automated tests covering trust model enforcement
-- create the seed management command structure
-- update this build log
+Kiro implemented admin classes, serializers, views, URL routing, 29 tests, seed command, and build log.
 
-Developer actions and judgements included:
-- identifying the URL design gap (topic slug ambiguity without journey context)
-- reviewing seed content against `docs/03-legal-framework.md` before approving
-- confirming test results and seed output before proceeding
-- deciding which seed record to include (human product decision)
-- deciding the SafeSpace capstone idea, journeys, and problem scope (entirely human-originated)
+Developer decisions: URL design correction (journey-scoped topics), seed content review against docs/03-legal-framework.md, approval of migration, confirming test results.
 
-### Current Status
+### Current Status at end of Day 2
 
-Day 2 complete. The SafeSpace trusted knowledge API is operational with:
-- 4 read-only endpoints
-- backend trust filtering enforced
-- 29 passing automated tests
-- 1 verified demonstration knowledge record in the live database
+Trusted knowledge API operational. VERIFIED filtering enforced server-side. No AI, no frontend.
 
-No AI integration, user authentication, CORS, frontend, or Day 3 features have been implemented.
+---
+
+## Day 3
+
+### Objective
+
+Add the first actionability and safety layer: SupportService, ActionPath, RiskRule, action/support APIs, and deterministic safety classification.
+
+### Completed
+
+#### Models
+
+- Added `SupportService` model with service-type choices and verification fields.
+- Added `ActionPath` model with step ordering and `unique_step_number_per_topic` constraint.
+- Added `RiskRule` model with pattern-based deterministic matching and a `.matches()` method.
+- Added supporting TextChoices: `ServiceType`, `ActionType`, `RiskCategory`, `RiskAction`.
+
+#### Migration
+
+- Generated and applied `core/migrations/0002_riskrule_supportservice_actionpath.py`.
+- Tables created: `core_riskrule`, `core_supportservice`, `core_actionpath`.
+- Constraint added: `unique_step_number_per_topic` on `core_actionpath`.
+
+#### Django Admin
+
+- Registered `SupportService`, `ActionPath`, `RiskRule` with list_display, list_filter, search_fields, autocomplete_fields, date_hierarchy, and fieldsets.
+
+#### Serializers
+
+- Rewrote `core/serializers.py` — added `SupportServiceSerializer` and `ActionPathSerializer`.
+- `ActionPathSerializer` nests inline `SupportServiceSerializer` and `LegalSourceSerializer`.
+
+#### API Endpoints (Day 3 additions)
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | /api/v1/support-services/ | Active VERIFIED support services |
+| GET | /api/v1/journeys/<slug>/topics/<slug>/actions/ | Verified action steps for a topic |
+| POST | /api/v1/safety/check/ | Deterministic risk classification (message not stored) |
+
+#### Safety Classification
+
+- Implemented `safety_check` view: accepts `{"message": "..."}`, evaluates active RiskRules by priority and severity, returns `{risk_level, action, matched_rule}`.
+- User message is not persisted anywhere.
+- Falls back to `LOW / NORMAL_FLOW` when no rules match.
+
+#### Tests
+
+- Added 27 new tests (ActionPath: 10, SupportService: 7, SafetyCheck: 10).
+- Total test suite: 56 tests, all passing.
+- Run time: ~1.2 seconds.
+
+#### Demonstration Seed Data
+
+Extended `seed_demo.py` with:
+- 4 verified support services from `docs/03-legal-framework.md`: Child Helpline 116, GBV Helpline 1195, National Legal Aid Service, IPOA.
+- 3 ActionPath steps for the Arrest Rights topic (grounded in Constitution of Kenya, Article 49).
+- 3 RiskRules based on example phrases from `docs/07-safety-and-privacy.md`.
+
+All seed data is sourced from existing project documentation. No contact information was invented.
+
+### Files Created
+
+- `backend/core/migrations/0002_riskrule_supportservice_actionpath.py`
+
+### Files Modified
+
+- `backend/core/models.py` — appended SupportService, ActionPath, RiskRule
+- `backend/core/admin.py` — appended SupportService, ActionPath, RiskRule admin classes
+- `backend/core/serializers.py` — rewritten to add SupportServiceSerializer, ActionPathSerializer
+- `backend/core/views.py` — rewritten to add support_service_list, action_list, safety_check
+- `backend/core/urls.py` — rewritten to add 3 new routes
+- `backend/core/tests.py` — rewritten with 56 total tests
+- `backend/core/management/commands/seed_demo.py` — rewritten with Day 3 data
+- `docs/05-architecture.md` — updated with Day 3 architecture
+- `docs/06-data-model.md` — updated with SupportService, ActionPath, RiskRule
+- `docs/07-safety-and-privacy.md` — updated with deterministic risk classification
+- `docs/08-build-log.md` — this file
+
+### Issues Encountered
+
+- `seed_demo --reset` failed on first run because PROTECT prevented Journey deletion while Topics existed. Fixed by deleting children (ActionPaths, RightsRecords, Topics) before parents.
+
+### Architectural Decisions
+
+- SupportService is separate from LegalSource: legal documents and human support contacts serve different purposes and have different verification workflows.
+- ActionPath uses `PROTECT` on source FK (nullable) and `SET_NULL` on support_service FK — allows a service to be removed without cascading deletes of action steps.
+- Safety endpoint uses deterministic pattern matching — auditable and AI-free. AI-assisted classification is planned for Day 4+.
+- User messages are not persisted anywhere — consistent with SafeSpace privacy principle (docs/07-safety-and-privacy.md).
+
+### AI Coding Usage
+
+Kiro implemented: three new models, migration, three admin classes, two new serializers, three new views, updated URL routing, 27 new tests, updated seed command, and all four documentation updates.
+
+Developer decisions included:
+- reviewing seed service data against docs/03-legal-framework.md before approving
+- confirming risk rule patterns are consistent with docs/07-safety-and-privacy.md examples
+- reviewing all 56 test results before proceeding
+- deciding which support services had sufficient documentation to include
+- approving the architecture decision to keep safety classification deterministic (no AI) at this stage
+
+SafeSpace capstone idea, target users, journeys, and problem scope remain entirely human-originated.
+
+### Current Status at end of Day 3
+
+Actionability and safety layer complete. The backend now has:
+- 7 knowledge/support/action models
+- 7 read-only API endpoints
+- 1 deterministic safety classification endpoint
+- 56 passing automated tests
+- Verified demonstration data for all Day 3 features
+
+No AI, no frontend, no user authentication, no personal data collection.

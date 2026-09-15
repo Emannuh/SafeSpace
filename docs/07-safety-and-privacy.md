@@ -4,11 +4,11 @@
 
 SafeSpace may be used by young people in sensitive or unsafe situations.
 
-Safety therefore needs to be part of the architecture rather than an additional feature.
+Safety is part of the architecture rather than an additional feature.
 
 ## Data Minimisation
 
-The MVP should not require:
+The MVP does not require:
 
 - full name
 - national ID
@@ -17,13 +17,15 @@ The MVP should not require:
 - exact home address
 - account creation
 
-Users should be able to access core rights information anonymously.
+Users can access core rights information anonymously.
 
 ## Sensitive Conversations
 
-SafeSpace should avoid storing raw conversations by default.
+SafeSpace does not store raw user messages or conversations.
 
-If interaction analytics are required, the system should prefer storing:
+The safety classification endpoint (POST /api/v1/safety/check/) accepts a message, classifies it, and returns a result — without persisting the message.
+
+If interaction analytics are required in the future, the system should prefer storing:
 
 - topic
 - risk classification
@@ -34,43 +36,64 @@ rather than detailed personal disclosures.
 
 ## Risk Classification
 
-Suggested levels:
+### Risk Levels
 
-LOW
+LOW — normal informational journey
 
-MEDIUM
+MEDIUM — information plus relevant support services
 
-HIGH
+HIGH — prominently surface verified support options
 
-IMMEDIATE
+IMMEDIATE — prioritise immediate safety and support pathways before legal information
 
-## Immediate Risk
+### Deterministic Safety Classification (Day 3)
 
-Examples of messages that may indicate immediate risk include:
+SafeSpace uses deterministic RiskRule pattern matching as the first line of safety classification.
 
-"I am not safe"
+How it works:
 
-"He is here"
+1. The user message is compared against all active RiskRule records ordered by priority.
+2. Each rule contains a comma-separated list of keywords or phrases.
+3. A message matches a rule if it contains any of the listed terms (case-insensitive).
+4. When multiple rules match, the rule with the highest risk severity is selected.
+5. If no rules match, the default result is LOW / NORMAL_FLOW.
 
-"They are hurting me now"
+This approach is auditable, verifiable, and does not require AI.
 
-"I cannot leave"
+AI-assisted classification is planned for a future milestone.
 
-Immediate-risk responses should prioritise verified support channels.
+### Example Risk Rules
 
-The system should not delay the response while generating a long AI explanation.
+immediate-danger: "i am not safe, he is here, they are hurting me, i cannot leave"
+→ IMMEDIATE / SHOW_IMMEDIATE_SAFETY
+
+abuse-high-risk: "hurting me, beating me, abusing me, sexual abuse, assault"
+→ HIGH / SHOW_HIGH_RISK_SUPPORT
+
+general-concern: "scared, afraid, worried, unsafe, danger, threatened"
+→ MEDIUM / SHOW_SUPPORT
+
+### Immediate Risk Examples
+
+"I am not safe" → IMMEDIATE
+
+"He is here" → IMMEDIATE
+
+"They are hurting me now" → IMMEDIATE
+
+"I cannot leave" → IMMEDIATE
+
+Immediate-risk responses prioritise verified support channels before legal explanation.
 
 ## Quick Exit
 
-SafeSpace should include a Quick Exit feature.
+SafeSpace should include a Quick Exit feature (frontend — Day 4+).
 
-The purpose is to allow users to leave sensitive content quickly.
-
-The interface should also clearly communicate that a Quick Exit feature cannot guarantee that browser history, network logs, or device activity have been removed.
+The interface should communicate that Quick Exit cannot guarantee browser history, network logs, or device activity have been removed.
 
 ## AI Safety
 
-SafeSpace should never allow the AI model to:
+SafeSpace must never allow the AI model to:
 
 - determine whether a specific person is guilty
 - tell a user how to evade law enforcement
@@ -78,15 +101,11 @@ SafeSpace should never allow the AI model to:
 - fabricate legal institutions
 - fabricate emergency contacts
 
-AI output should be grounded in SafeSpace records.
+AI output must be grounded in SafeSpace records.
 
 ## Unsupported Questions
 
 If no verified information exists:
-
-SafeSpace should say so.
-
-Example:
 
 "SafeSpace does not currently have verified information for this question. Please use one of the listed support services or seek qualified legal assistance."
 

@@ -6,17 +6,7 @@ Represents one of the main SafeSpace journeys.
 
 Fields:
 
-id
-
-name
-
-slug
-
-description
-
-risk_default
-
-active
+id, name, slug, description, risk_default, active, created_at, updated_at
 
 ## Topic
 
@@ -24,45 +14,17 @@ Represents a specific information topic within a journey.
 
 Fields:
 
-id
+id, journey_id, title, slug, description, default_risk_level, sort_order, active, created_at, updated_at
 
-journey_id
-
-title
-
-slug
-
-description
-
-default_risk_level
-
-sort_order
-
-active
+Constraint: slug is unique within a Journey (not globally).
 
 ## LegalSource
 
-Represents an authoritative legal, policy, or institutional source.
+Represents an authoritative legal, policy, or institutional source document.
 
 Fields:
 
-id
-
-title
-
-source_type
-
-publisher
-
-jurisdiction
-
-url
-
-publication_date
-
-last_verified
-
-status
+id, title, source_type, publisher, jurisdiction, url, publication_date, last_verified, status, created_at, updated_at
 
 ## RightsRecord
 
@@ -70,134 +32,56 @@ Represents a small, verifiable rights proposition.
 
 Fields:
 
-id
-
-journey_id
-
-topic_id
-
-jurisdiction
-
-title
-
-plain_language_summary
-
-legal_reference
-
-section_reference
-
-source_id
-
-risk_level
-
-next_step_text
-
-limitations
-
-last_verified
-
-status
-
-active
-
-## RightsTranslation
-
-Stores translated SafeSpace content.
-
-Fields:
-
-id
-
-rights_record_id
-
-language_code
-
-title
-
-plain_language_summary
-
-next_step_text
+id, record_code, journey_id, topic_id, jurisdiction, title, plain_language_summary, legal_reference, section_reference, source_id, risk_level, next_step_text, limitations, last_verified, status, active, created_at, updated_at
 
 ## SupportService
 
-Represents a verified support or referral service.
+Represents a verified support organisation, helpline, or official support pathway.
+
+Purpose: store verified human support contacts that a user can contact — distinct from LegalSource which stores authoritative legal documents.
 
 Fields:
 
-id
+id, name, slug, service_type, description, jurisdiction, phone, whatsapp, website, available_24_7, source_url, last_verified, status, active, created_at, updated_at
 
-name
-
-service_type
-
-country
-
-phone
-
-whatsapp
-
-website
-
-description
-
-available_24_7
-
-last_verified
-
-status
+Service types: CHILD_PROTECTION, GBV_SUPPORT, LEGAL_AID, POLICE_OVERSIGHT, HEALTH_SUPPORT, GENERAL_SUPPORT
 
 ## ActionPath
 
-Represents structured next-step guidance.
+Represents structured next-step guidance associated with a SafeSpace topic.
+
+Purpose: provide verified, source-traceable next steps — not AI-generated suggestions.
 
 Fields:
 
-id
+id, topic_id, title, step_number, instruction, action_type, support_service_id (nullable), source_id (nullable), last_verified, status, active, created_at, updated_at
 
-topic_id
+Action types: RIGHTS_GUIDANCE, SUPPORT_REFERRAL, LEGAL_ASSISTANCE, REPORTING_OPTION, SAFETY_ACTION
 
-step_number
-
-instruction
-
-action_type
-
-active
+Constraint: step_number is unique within a Topic.
 
 ## RiskRule
 
-Represents deterministic safety classification rules.
+Represents a deterministic safety classification rule.
+
+Purpose: provide first-line risk classification without AI. Rules use simple pattern matching on incoming messages.
 
 Fields:
 
-id
+id, name, category, pattern (comma-separated keywords), risk_level, action, priority, active, created_at, updated_at
 
-category
+Categories: GENERAL, ABUSE, IMMEDIATE_DANGER, LAW_ENFORCEMENT
 
-pattern
+Actions: NORMAL_FLOW, SHOW_SUPPORT, SHOW_HIGH_RISK_SUPPORT, SHOW_IMMEDIATE_SAFETY
 
-risk_level
+## RightsTranslation (planned — Day 4+)
 
-action
+Stores translated SafeSpace content.
 
-active
+Fields (planned): id, rights_record_id, language_code, title, plain_language_summary, next_step_text
 
-## Optional Interaction Record
+## Optional Interaction Record (planned)
 
 SafeSpace may store privacy-preserving analytics.
 
-Possible fields:
-
-id
-
-anonymous_session_id
-
-journey_id
-
-topic_id
-
-risk_level
-
-created_at
-
-The MVP should avoid storing raw user questions unless there is a clear safety and privacy justification.
+The MVP does not store raw user questions or personal data.

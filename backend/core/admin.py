@@ -135,3 +135,96 @@ class RightsRecordAdmin(admin.ModelAdmin):
             "classes": ("collapse",),
         }),
     )
+
+from .models import ActionPath, RiskRule, SupportService
+
+
+# ---------------------------------------------------------------------------
+# SupportService
+# ---------------------------------------------------------------------------
+
+@admin.register(SupportService)
+class SupportServiceAdmin(admin.ModelAdmin):
+    list_display  = ("name", "service_type", "jurisdiction", "phone", "available_24_7", "status", "last_verified", "active")
+    list_filter   = ("service_type", "jurisdiction", "available_24_7", "status", "active")
+    search_fields = ("name", "slug", "description", "phone")
+    ordering      = ("service_type", "name")
+    prepopulated_fields = {"slug": ("name",)}
+    readonly_fields     = ("created_at", "updated_at")
+    date_hierarchy      = "last_verified"
+
+    fieldsets = (
+        (None, {
+            "fields": ("name", "slug", "service_type", "description", "jurisdiction"),
+        }),
+        ("Contact", {
+            "fields": ("phone", "whatsapp", "website", "available_24_7"),
+        }),
+        ("Verification", {
+            "fields": ("source_url", "last_verified", "status", "active"),
+        }),
+        ("Timestamps", {
+            "fields": ("created_at", "updated_at"),
+            "classes": ("collapse",),
+        }),
+    )
+
+
+# ---------------------------------------------------------------------------
+# ActionPath
+# ---------------------------------------------------------------------------
+
+@admin.register(ActionPath)
+class ActionPathAdmin(admin.ModelAdmin):
+    list_display  = ("title", "topic", "step_number", "action_type", "status", "active", "last_verified")
+    list_filter   = ("action_type", "status", "active", "topic__journey")
+    search_fields = ("title", "instruction", "topic__title", "topic__journey__name")
+    ordering      = ("topic__journey__name", "topic__title", "step_number")
+    readonly_fields     = ("created_at", "updated_at")
+    autocomplete_fields = ("topic", "support_service", "source")
+    date_hierarchy      = "last_verified"
+
+    fieldsets = (
+        (None, {
+            "fields": ("topic", "title", "step_number", "action_type"),
+        }),
+        ("Content", {
+            "fields": ("instruction",),
+        }),
+        ("References", {
+            "fields": ("support_service", "source"),
+        }),
+        ("Verification", {
+            "fields": ("last_verified", "status", "active"),
+        }),
+        ("Timestamps", {
+            "fields": ("created_at", "updated_at"),
+            "classes": ("collapse",),
+        }),
+    )
+
+
+# ---------------------------------------------------------------------------
+# RiskRule
+# ---------------------------------------------------------------------------
+
+@admin.register(RiskRule)
+class RiskRuleAdmin(admin.ModelAdmin):
+    list_display  = ("name", "category", "risk_level", "action", "priority", "active")
+    list_filter   = ("category", "risk_level", "action", "active")
+    search_fields = ("name", "pattern")
+    ordering      = ("-priority", "name")
+    readonly_fields = ("created_at", "updated_at")
+
+    fieldsets = (
+        (None, {
+            "fields": ("name", "category", "pattern"),
+        }),
+        ("Classification", {
+            "fields": ("risk_level", "action", "priority", "active"),
+        }),
+        ("Timestamps", {
+            "fields": ("created_at", "updated_at"),
+            "classes": ("collapse",),
+        }),
+    )
