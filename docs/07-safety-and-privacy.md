@@ -4,18 +4,12 @@
 
 SafeSpace may be used by young people in sensitive or unsafe situations.
 
-Safety is part of the architecture rather than an additional feature.
+Safety is part of the architecture, not an additional feature.
 
 ## Data Minimisation
 
 The MVP does not require:
-
-- full name
-- national ID
-- phone number
-- email address
-- exact home address
-- account creation
+- full name, national ID, phone number, email address, exact address, account creation.
 
 Users can access core rights information anonymously.
 
@@ -25,14 +19,12 @@ SafeSpace does not store raw user messages or conversations.
 
 The safety classification endpoint (POST /api/v1/safety/check/) accepts a message, classifies it, and returns a result — without persisting the message.
 
-If interaction analytics are required in the future, the system should prefer storing:
-
-- topic
-- risk classification
-- anonymous session identifier
-- timestamp
-
-rather than detailed personal disclosures.
+**Frontend privacy rules (Day 4):**
+- The safety-check message is held only in React component state.
+- It is NEVER written to localStorage, sessionStorage, or cookies.
+- It is NEVER sent to analytics.
+- After submission, the message is cleared from component state.
+- The textarea uses `autoComplete="off"` and `autoSave="off"` to discourage browser caching.
 
 ## Risk Classification
 
@@ -46,34 +38,15 @@ HIGH — prominently surface verified support options
 
 IMMEDIATE — prioritise immediate safety and support pathways before legal information
 
-### Deterministic Safety Classification (Day 3)
+### Deterministic Safety Classification
 
 SafeSpace uses deterministic RiskRule pattern matching as the first line of safety classification.
 
-How it works:
+Rules are stored in the database, not hard-coded. Priority ordering ensures the most severe matching rule wins.
 
-1. The user message is compared against all active RiskRule records ordered by priority.
-2. Each rule contains a comma-separated list of keywords or phrases.
-3. A message matches a rule if it contains any of the listed terms (case-insensitive).
-4. When multiple rules match, the rule with the highest risk severity is selected.
-5. If no rules match, the default result is LOW / NORMAL_FLOW.
+If no rules match, the default is LOW / NORMAL_FLOW.
 
-This approach is auditable, verifiable, and does not require AI.
-
-AI-assisted classification is planned for a future milestone.
-
-### Example Risk Rules
-
-immediate-danger: "i am not safe, he is here, they are hurting me, i cannot leave"
-→ IMMEDIATE / SHOW_IMMEDIATE_SAFETY
-
-abuse-high-risk: "hurting me, beating me, abusing me, sexual abuse, assault"
-→ HIGH / SHOW_HIGH_RISK_SUPPORT
-
-general-concern: "scared, afraid, worried, unsafe, danger, threatened"
-→ MEDIUM / SHOW_SUPPORT
-
-### Immediate Risk Examples
+### Immediate Risk Examples (from docs/07 spec)
 
 "I am not safe" → IMMEDIATE
 
@@ -81,36 +54,46 @@ general-concern: "scared, afraid, worried, unsafe, danger, threatened"
 
 "They are hurting me now" → IMMEDIATE
 
-"I cannot leave" → IMMEDIATE
+### Frontend Safety UX (Day 4)
 
-Immediate-risk responses prioritise verified support channels before legal explanation.
+IMMEDIATE result: "Your safety comes first" — calm tone, direct link to support services.
 
-## Quick Exit
+HIGH result: "You may need support right now" — support services prominently shown.
 
-SafeSpace should include a Quick Exit feature (frontend — Day 4+).
+MEDIUM result: "Support is available" — support services visible.
 
-The interface should communicate that Quick Exit cannot guarantee browser history, network logs, or device activity have been removed.
+LOW result: "Here to help" — normal navigation.
+
+All results include: "This is a structured safety guide — not a definitive assessment."
+
+Emergency services contact (999 / 112) always mentioned for IMMEDIATE.
+
+## Quick Exit (Day 4)
+
+Quick Exit is available throughout SafeSpace via the persistent header button.
+
+Behaviour:
+- One click navigates to an external neutral site immediately (google.com).
+- No confirmation dialog.
+- No history manipulation is attempted.
+
+Disclaimer shown to users:
+"Quick Exit leaves SafeSpace immediately but does not erase your browser history or device activity."
 
 ## AI Safety
 
-SafeSpace must never allow the AI model to:
-
+SafeSpace must never allow the AI model (Day 5+) to:
 - determine whether a specific person is guilty
 - tell a user how to evade law enforcement
-- fabricate legal rights
-- fabricate legal institutions
-- fabricate emergency contacts
+- fabricate legal rights, institutions, or emergency contacts
 
 AI output must be grounded in SafeSpace records.
 
 ## Unsupported Questions
 
 If no verified information exists:
-
 "SafeSpace does not currently have verified information for this question. Please use one of the listed support services or seek qualified legal assistance."
 
 ## Privacy Philosophy
 
-SafeSpace follows the principle:
-
-Collect less. Protect more.
+SafeSpace follows the principle: **Collect less. Protect more.**

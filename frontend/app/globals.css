@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+:root {
+  --color-trust: #1d4ed8;    /* calm blue */
+  --color-safe: #166534;     /* deep green for verified badges */
+  --color-warn: #92400e;     /* amber for medium risk */
+  --color-danger: #991b1b;   /* red for high/immediate */
+  --color-surface: #f8fafc;
+  --color-text: #0f172a;
+}
+
+/* Ensure sufficient focus visibility for keyboard users */
+*:focus-visible {
+  outline: 2px solid var(--color-trust);
+  outline-offset: 2px;
+}
+
+/* Smooth reading for body text */
+body {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  line-height: 1.6;
+}

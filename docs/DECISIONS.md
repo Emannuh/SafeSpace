@@ -105,10 +105,60 @@ The hackathon requires consideration of limited connectivity, basic devices, and
 
 ---
 
-## ADR-008: Safety Overrides Normal Flow
+## ADR-009: CORS Configuration
+
+Status: Accepted
+
+Decision:
+
+Use `django-cors-headers` with `CORS_ALLOWED_ORIGINS` restricted to the frontend origin. Never use `CORS_ALLOW_ALL_ORIGINS = True`.
+
+Reason:
+
+Next.js (port 3000) and Django (port 8000) run on separate origins in development. CORS is required for the browser to allow the API call. Restricting to known origins is a security baseline.
+
+---
+
+## ADR-010: Quick Exit Implementation
+
+Status: Accepted
+
+Decision:
+
+Quick Exit uses `window.location.replace()` to navigate away immediately. No browser history manipulation (e.g. `history.pushState` tricks) is attempted.
+
+Reason:
+
+History manipulation is unreliable and can create a false sense of security. Clear disclosure is provided: "Quick Exit leaves SafeSpace immediately but does not erase your browser history."
+
+---
+
+## ADR-011: Safety Message Privacy
+
+Status: Accepted
+
+Decision:
+
+The safety check message is held only in React component state and cleared after submission. It is never written to localStorage, sessionStorage, cookies, or analytics.
+
+Reason:
+
+Consistent with SafeSpace's privacy principle (collect less, protect more) and the sensitive nature of the safety check content.
 
 Status:
 Accepted
+
+Decision:
+
+Immediate-risk messages will bypass the normal informational response flow.
+
+Reason:
+
+A long legal explanation should not take priority over immediate safety and support information.
+
+## ADR-008: Safety Overrides Normal Flow
+
+Status: Accepted
 
 Decision:
 

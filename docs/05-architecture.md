@@ -8,106 +8,107 @@ The system follows the principle:
 
 Verified Source → Structured Rights Record → Controlled Retrieval → AI Explanation → Source Citation → Next Action
 
-## Updated Architecture (Day 3)
+## Full Architecture (Day 4)
 
 ```
-                  USER
-                    |
-                    v
-             Future Frontend
-                    |
-                    v
+                  USER (mobile-first)
+                        |
+                        v
+              Next.js Frontend (App Router)
+              /journeys, /support, /safety
+                        |
+              NEXT_PUBLIC_API_BASE_URL
+                        |
+                        v
               Django API (/api/v1/)
-                    |
-       +------------+-------------+-----------+
-       |            |             |           |
-       v            v             v           v
- Rights Layer   Action Layer  Support    Safety Layer
-       |            |          Layer          |
-       v            v             |           v
-RightsRecord   ActionPath    SupportService  RiskRule
-LegalSource    (optional     (verified       (deterministic
-               source)        contacts)       pattern match)
-       \            |             /           /
-        \           |            /           /
-         +----------+-----------+-----------+
-                    |
-                    v
-                PostgreSQL
+              CORS: restricted to frontend origin
+                        |
+       +----------------+------------------+-----------+
+       |                |                  |           |
+       v                v                  v           v
+ Rights Layer     Action Layer       Support        Safety Layer
+       |                |             Layer               |
+       v                v                |               v
+RightsRecord       ActionPath      SupportService    RiskRule
+LegalSource        (+ source)      (verified         (deterministic
+(source             (+ service)     contacts)         pattern match)
+ provenance)
+       \               |                 /              /
+        \              |                /              /
+         +-------------+---------------+--------------+
+                        |
+                        v
+                   PostgreSQL
 
-No AI yet. AI layer is planned for Day 4+.
+AI layer: Day 5+
 ```
 
-## High-Level Components
+## Components
 
-### Frontend
+### Frontend (Day 4)
 
-Responsibilities: mobile-first UI, journey selection, question submission, display of rights information, sources, support services, safety routing, language selection, Quick Exit.
+Technology: Next.js 16 + TypeScript + Tailwind CSS (App Router)
 
-Proposed technology: Next.js and Tailwind CSS
+Pages:
+- `/` — landing page, journey cards from API
+- `/journeys/[journeySlug]` — topics from API
+- `/journeys/[journeySlug]/topics/[topicSlug]` — UNDERSTAND / VERIFY / ACT / PROTECT
+- `/support` — support services directory from API
+- `/safety` — deterministic safety check
 
-Status: Not yet implemented.
+Features:
+- API client (`lib/api.ts`) with `NEXT_PUBLIC_API_BASE_URL`
+- Quick Exit (navigates away immediately, no history manipulation)
+- Loading / empty / error states on all API-driven screens
+- Risk badges and Verified badges driven by backend status
+- No legal content hard-coded in frontend source
+- No user accounts, no personal data collection
+- Safety check messages cleared from state after submission, never persisted
 
 ### Backend API
 
-Responsibilities: expose journey/topic/rights/action/support data, process safety classification, prepare grounded AI context (future), return structured responses.
+Technology: Django 6 + Django REST Framework
 
-Proposed technology: Django and Django REST Framework
-
-Status: Read-only API operational. Safety endpoint operational.
+Status: Fully operational. 7 endpoints. CORS configured (restricted to frontend origin).
 
 ### Knowledge Database
 
-Responsibilities: store journeys, topics, legal sources, rights records, support services, action pathways, risk rules, translations (future).
+Technology: PostgreSQL
 
-Proposed technology: PostgreSQL
-
-Status: All Day 3 tables live.
+Status: All Day 4 tables live. Seed data loaded.
 
 ### Safety Engine
 
-Responsibilities: classify risk level, identify immediate danger, bypass ordinary AI flows when necessary, expose emergency support pathways.
+Current: Deterministic RiskRule pattern matching (POST /api/v1/safety/check/).
 
-Current MVP approach: deterministic RiskRule pattern matching.
+Future: AI-assisted classification (Day 5+).
 
-Future enhancement: AI-assisted classification.
+### AI Layer
 
-Status: Deterministic safety endpoint operational at POST /api/v1/safety/check/.
+Status: Not yet implemented. Planned for Day 5+.
 
-### Retrieval Layer
-
-Responsibilities: map user questions to relevant topics, retrieve best matching verified records.
-
-Current approach: structured database filtering.
-
-Future enhancement: semantic search using pgvector.
-
-Status: Structured filtering in place.
-
-### AI Layer (Day 4+)
-
-Responsibilities: simplify complex legal language, explain verified rights information, support multilingual explanation.
-
-The AI layer must not: invent laws, invent procedures, invent support institutions, determine guilt or innocence.
-
-Status: Not yet implemented.
-
-## Failure Behaviour
-
-If AI is unavailable: SafeSpace still displays structured legal content.
-
-If no verified information exists: SafeSpace clearly states it does not have verified information.
-
-If immediate danger is detected: SafeSpace prioritises safety and support information before legal explanation.
-
-## API Endpoints (Day 3)
+## API Endpoints (complete)
 
 | Method | Endpoint | Purpose |
 |---|---|---|
 | GET | /api/v1/journeys/ | List active journeys |
-| GET | /api/v1/journeys/<slug>/topics/ | List active topics in a journey |
-| GET | /api/v1/journeys/<slug>/topics/<slug>/rights/ | Verified rights records |
-| GET | /api/v1/journeys/<slug>/topics/<slug>/actions/ | Verified action steps |
-| GET | /api/v1/rights/<record_code>/ | Single rights record |
-| GET | /api/v1/support-services/ | Active verified support services |
-| POST | /api/v1/safety/check/ | Deterministic risk classification |
+| GET | /api/v1/journeys/\<slug\>/topics/ | Topics in a journey |
+| GET | /api/v1/journeys/\<slug\>/topics/\<slug\>/rights/ | Verified rights records |
+| GET | /api/v1/journeys/\<slug\>/topics/\<slug\>/actions/ | Verified action steps |
+| GET | /api/v1/rights/\<record_code\>/ | Single rights record |
+| GET | /api/v1/support-services/ | Verified support services |
+| POST | /api/v1/safety/check/ | Deterministic safety classification |
+
+## CORS Decision
+
+CORS is required because Next.js (port 3000) and Django (port 8000) run on separate origins in development.
+
+`django-cors-headers==4.4.0` is used. Allowed origins are configured via `CORS_ALLOWED_ORIGINS` environment variable — default: `http://localhost:3000,http://127.0.0.1:3000`. `CORS_ALLOW_ALL_ORIGINS` is never used.
+
+## Failure Behaviour
+
+If API unavailable: frontend shows error state — no invented content.
+
+If no verified information: empty state shown, user directed to support services.
+
+If immediate danger detected: IMMEDIATE risk result surfaces verified support contacts immediately.
