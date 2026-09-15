@@ -1,0 +1,137 @@
+# =============================================================================
+# SafeSpace — Django + Next.js .gitignore
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Python / Django
+# -----------------------------------------------------------------------------
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+ENV/
+
+# Byte-compiled / optimised / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+
+# Django local database
+db.sqlite3
+*.sqlite3
+
+# Django collected static / media
+staticfiles/
+mediafiles/
+media/
+
+# Django secret key / local settings
+backend/local_settings.py
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# mypy
+.mypy_cache/
+
+# -----------------------------------------------------------------------------
+# Environment variables (never commit secrets)
+# -----------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# -----------------------------------------------------------------------------
+# Node / Next.js
+# -----------------------------------------------------------------------------
+
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+
+# Next.js cache
+frontend/.next/
+frontend/out/
+
+# Production build
+build/
+dist/
+
+# Yarn / npm logs
+yarn-error.log
+npm-debug.log*
+yarn-debug.log*
+.pnpm-debug.log*
+
+# Yarn PnP
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# -----------------------------------------------------------------------------
+# IDE / Editor
+# -----------------------------------------------------------------------------
+
+# VS Code
+.vscode/
+!.vscode/extensions.json
+
+# JetBrains (PyCharm, WebStorm, etc.)
+.idea/
+*.iml
+
+# Vim / Neovim
+*.swp
+*.swo
+*~
+
+# Emacs
+\#*\#
+.\#*
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# -----------------------------------------------------------------------------
+# OS-specific
+# -----------------------------------------------------------------------------
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# -----------------------------------------------------------------------------
+# Explicitly keep project structure
+# -----------------------------------------------------------------------------
+!README.md
+!docs/
+!docs/**
+!backend/
+!frontend/
