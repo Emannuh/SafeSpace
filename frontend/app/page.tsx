@@ -105,7 +105,7 @@ export default function HomePage() {
         >
           Choose your journey
         </h2>
-        {/* @ts-expect-error — async Server Component */}
+        {/* async Server Component */}
         <JourneyCards />
       </section>
 
