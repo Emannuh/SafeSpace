@@ -35,4 +35,8 @@ urlpatterns = [
     # --- Safety ---
     path("safety/check/",
          views.safety_check, name="safety-check"),
+
+    # --- Ask (AI-assisted explanation) ---
+    path("ask/",
+         views.ask, name="ask"),
 ]

@@ -341,3 +341,228 @@ First usable SafeSpace frontend complete. The full journey — Landing → Journ
 Django backend: 56/56 tests passing.
 
 No AI, no user authentication, no personal data collection.
+
+---
+
+## Day 4 — Validation (Node 24.21.0)
+
+### Objective
+
+Confirm that all Day 4 frontend tests pass and the production build succeeds on a supported Node LTS runtime.
+
+### Environment
+
+- Node: v24.21.0
+- npm: 11.19.0
+- Runtime switched from Node 25.9.0 (unsupported — caused yargs CJS loader regression in Jest) to Node 24.21.0 via nvm-windows.
+
+### Root Cause of Previous Test Failure
+
+The test environment failure under Node 25 was traced to a **corrupted `node_modules` tree**, not purely a Node 25 incompatibility. The `jest-snapshot/node_modules/semver/index.js` file was missing due to `ENOTEMPTY` race conditions during the parallel npm install attempts under Node 25. The `yargs` package was also installed without its `index.cjs` file for the same reason. Under Node 24 with a clean install, all packages resolved correctly.
+
+Two additional configuration fixes were made:
+
+1. `jest.config.ts` → renamed to `jest.config.cjs` — Jest 29 requires `ts-node` to parse a `.ts` config file, which was not installed. The `.cjs` extension forces CommonJS mode and requires no extra dependency.
+2. `package.json "type": "module"` — added to align with Next.js ESM source.
+3. `app/page.tsx` — removed a `@ts-expect-error` comment that was no longer applicable under the current TypeScript version, causing a build type error.
+
+### yargs@17.7.3 Workaround Assessment
+
+`jest-cli` declares `"yargs": "^17.3.1"` in its own dependencies, meaning Jest 29 already resolves yargs v17 from its own tree. The explicit `"yargs": "^17.7.3"` in devDependencies is **redundant but harmless** — it was retained as a guard against future hoisting behaviour that could pull in yargs v18.
+
+No `--legacy-peer-deps` flag was added to any npm config.
+
+### Test Results
+
+```
+Test Suites: 1 passed, 1 total
+Tests:       19 passed, 19 total
+Snapshots:   0 total
+Time:        4.477s
+```
+
+All 19 frontend tests passed. No tests were deleted, skipped, weakened, or modified.
+
+### Production Build Results
+
+```
+▲ Next.js 16.3.5 (Turbopack)
+✓ Compiled successfully in 25.2s
+✓ Finished TypeScript in 9.2s
+✓ Collecting page data in 3.9s
+✓ Generating static pages (6/6) in 2.5s
+✓ Finalizing page optimization in 37ms
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /journeys/[journeySlug]
+├ ƒ /journeys/[journeySlug]/topics/[topicSlug]
+├ ○ /safety
+└ ○ /support
+```
+
+Production build: PASS. All 6 routes compiled without errors.
+
+### Django Backend Regression
+
+```
+Ran 56 tests in 1.019s
+OK
+```
+
+56/56 backend tests passing. No regression.
+
+### Files Changed During Validation
+
+| File | Change |
+|---|---|
+| `frontend/jest.config.cjs` | Created (renamed from `jest.config.js` → `.cjs`) |
+| `frontend/jest.config.js` | Deleted |
+| `frontend/package.json` | Added `"type": "module"`, updated test script to reference `jest.config.cjs` |
+| `frontend/app/page.tsx` | Removed stale `@ts-expect-error` comment |
+| `frontend/.nvmrc` | Already present — contains `22` (project targets Node LTS 22+) |
+
+### AI Coding Usage
+
+Kiro traced the root cause (corrupted node_modules), identified the jest.config.ts → .cjs fix, added `"type": "module"`, and removed the stale `@ts-expect-error` directive. The developer switched the Node runtime from 25 to 24 using nvm-windows.
+
+### Current Status at end of Day 4 Validation
+
+Day 4 fully validated.
+
+- 19/19 frontend tests passing
+- Production build passing (6 routes)
+- 56/56 backend tests passing
+- No AI, no authentication, no personal data collection
+- Safe to commit
+
+---
+
+## Day 5
+
+### Objective
+
+Introduce SafeSpace's first controlled AI explanation layer. AI is grounded in verified retrieved evidence — it cannot answer from general knowledge, invent legal information, or bypass the trust filters established in Days 1–4.
+
+### Architecture
+
+```
+User question
+  ↓
+Privacy validation (no persistence)
+  ↓
+Deterministic safety (RiskRules — Day 3)
+  ↓
+Topic/journey classification (keyword matching)
+  ↓
+VERIFIED retrieval (active=True AND status=VERIFIED)
+  ↓
+Insufficient evidence? → controlled fallback (no AI)
+IMMEDIATE risk? → safety pathway (no AI)
+  ↓
+Evidence package (structured text context)
+  ↓
+LLM receives ONLY verified evidence + question
+(evidence block clearly separated from user text)
+  ↓
+Output validation (unknown record codes rejected)
+  ↓
+Structured response: answer + evidence + sources + actions + support
+```
+
+### Completed
+
+#### Backend services (`core/services/`)
+
+- `retrieval.py` — deterministic keyword classification + VERIFIED evidence retrieval
+- `safety.py` — wraps RiskRule engine for pipeline integration
+- `ai_provider.py` — OpenAI provider abstraction; system instruction stored centrally; evidence/question clearly separated to resist prompt injection; all failure modes handled
+- `answer_service.py` — full orchestration pipeline (8 steps, immutable order)
+
+#### API endpoint
+
+- `POST /api/v1/ask/` — accepts `{"question": "..."}`, returns structured JSON
+- Question is not persisted. No user model created.
+
+#### Frontend
+
+- `/ask` — Ask SafeSpace page with guided question form
+- `AskForm.tsx` — answer display with source provenance, action steps, support services, AI disclosure, risk banner for HIGH/IMMEDIATE, no browser storage writes
+- Header updated with Ask SafeSpace nav link
+- `lib/api.ts` — `postAsk()` added
+- `lib/types.ts` — `AskResponse`, `EvidenceStatus` added
+
+#### Evidence status values
+
+- `SUPPORTED` — ≥2 verified rights records found
+- `PARTIAL` — 1 verified record found
+- `INSUFFICIENT` — no verified records → AI not invoked, controlled fallback returned
+
+#### Privacy
+
+- User questions not persisted to database
+- Questions not written to frontend browser storage
+- External AI provider (OpenAI) processes the question when AI_API_KEY is configured — disclosed in UI
+
+#### Hardcoded safety numbers audit
+
+- `999`/`112` appear only in the IMMEDIATE safety path — architecturally correct (must not depend on API)
+- `116`/`1195` appear only in test fixtures — not in production code
+
+### Test results
+
+Backend:
+```
+Ran 82 tests in 3.717s
+OK
+```
+(56 existing + 26 new Day 5 tests)
+
+Frontend:
+```
+Tests: 31 passed, 31 total
+```
+(19 existing + 12 new Day 5 tests)
+
+Production build: PASS
+
+### Files Created
+
+- `backend/core/services/__init__.py`
+- `backend/core/services/retrieval.py`
+- `backend/core/services/safety.py`
+- `backend/core/services/ai_provider.py`
+- `backend/core/services/answer_service.py`
+- `frontend/app/ask/page.tsx`
+- `frontend/app/ask/AskForm.tsx`
+
+### Files Modified
+
+- `backend/core/views.py` — `ask` view appended
+- `backend/core/urls.py` — `/ask/` route registered
+- `backend/core/tests.py` — 26 new tests appended
+- `backend/safespace_backend/settings.py` — AI env vars appended
+- `backend/.env.example` — AI variable names appended
+- `frontend/lib/api.ts` — `postAsk` appended
+- `frontend/lib/types.ts` — `AskResponse`, `EvidenceStatus` appended
+- `frontend/app/components/Header.tsx` — Ask SafeSpace nav link added
+- `frontend/__tests__/safespace.test.tsx` — 12 new tests appended
+
+### AI Coding Usage
+
+Kiro implemented: all four service files, the ask view, URL registration, 26 backend tests, 26 frontend tests, frontend Ask page and form, API client extension, type definitions, and this build log.
+
+Developer decisions included:
+- choosing to use deterministic keyword classification rather than LLM classification for Day 5 (keeps pipeline auditable and fast for the small 3-journey dataset)
+- approving the evidence package structure
+- approving the system instruction wording
+- confirming that 999/112 hardcoded in IMMEDIATE path is correct and intentional
+- deciding not to introduce vector search or embeddings at this stage
+- reviewing all 82 backend and 31 frontend test results before proceeding
+
+SafeSpace idea, journeys, problem scope, and product decisions remain entirely human-originated.
+
+### Current Status at end of Day 5
+
+SafeSpace is now AI-enabled. The AI layer is grounded in verified retrieved evidence and cannot answer from general knowledge. 82 backend tests and 31 frontend tests pass. Production build passes.

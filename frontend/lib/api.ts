@@ -111,3 +111,18 @@ export async function postSafetyCheck(
   if (!res.ok) throw new ApiError(res.status, "Safety check failed");
   return res.json() as Promise<SafetyCheckResult>;
 }
+
+// ---------------------------------------------------------------------------
+// Ask (AI-assisted explanation)
+// Question is NOT stored in the browser. POST to backend only.
+// ---------------------------------------------------------------------------
+
+export async function postAsk(question: string): Promise<import("./types").AskResponse> {
+  const res = await fetch(`${baseUrl()}/ask/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question }),
+  });
+  if (!res.ok) throw new ApiError(res.status, "Ask request failed");
+  return res.json() as Promise<import("./types").AskResponse>;
+}

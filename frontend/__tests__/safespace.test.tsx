@@ -24,18 +24,19 @@ jest.mock("next/navigation", () => ({
 // Mock the API module
 // ---------------------------------------------------------------------------
 jest.mock("@/lib/api", () => ({
-  fetchJourneys:       jest.fn(),
-  fetchTopics:         jest.fn(),
-  fetchRights:         jest.fn(),
-  fetchActions:        jest.fn(),
+  fetchJourneys:        jest.fn(),
+  fetchTopics:          jest.fn(),
+  fetchRights:          jest.fn(),
+  fetchActions:         jest.fn(),
   fetchSupportServices: jest.fn(),
-  postSafetyCheck:     jest.fn(),
-  ApiError:            class ApiError extends Error {},
+  postSafetyCheck:      jest.fn(),
+  postAsk:              jest.fn(),
+  ApiError:             class ApiError extends Error {},
 }));
 
 import * as api from "@/lib/api";
-import QuickExit from "@/app/components/QuickExit";
-import RiskBadge from "@/app/components/RiskBadge";
+import AskForm from "@/app/ask/AskForm";
+import QuickExit from "@/app/components/QuickExit";import RiskBadge from "@/app/components/RiskBadge";
 import VerifiedBadge from "@/app/components/VerifiedBadge";
 import { LoadingState, EmptyState, ErrorState } from "@/app/components/StateViews";
 import SafetyCheckForm from "@/app/safety/SafetyCheckForm";
@@ -280,5 +281,188 @@ describe("SafetyCheckForm", () => {
     await waitFor(() => screen.getByText(/here to help/i));
     fireEvent.click(screen.getByRole("button", { name: /start over/i }));
     expect(screen.getByLabelText(/describe your situation/i)).toBeInTheDocument();
+  });
+});
+
+// ===========================================================================
+// Day 5 — Ask SafeSpace frontend tests
+// ===========================================================================
+
+// Add postAsk to the API mock — already included in the top-level mock above.
+
+import { postAsk } from "@/lib/api";
+import AskForm from "@/app/ask/AskForm";
+
+const mockPostAsk = postAsk as jest.Mock;
+
+const mockAskResponse = {
+  answer: "You have the right to know why you are being arrested.",
+  evidence_status: "SUPPORTED" as const,
+  risk_level: "LOW" as const,
+  risk_action: "NORMAL_FLOW" as const,
+  ai_used: true,
+  ai_disclosure: "AI-assisted explanation. Answers come from verified sources.",
+  journey: null,
+  topic: null,
+  rights: [mockRecord],
+  sources: [mockSource],
+  actions: [mockAction],
+  support_services: [mockService],
+};
+
+describe("AskForm — Day 5", () => {
+  beforeEach(() => { jest.clearAllMocks(); });
+
+  // 1. Form renders
+  it("renders the question textarea and submit button", () => {
+    render(<AskForm />);
+    expect(screen.getByLabelText(/your question/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /ask safespace/i })).toBeInTheDocument();
+  });
+
+  // 2. Empty question cannot submit
+  it("submit button is disabled when question is empty", () => {
+    render(<AskForm />);
+    expect(screen.getByRole("button", { name: /ask safespace/i })).toBeDisabled();
+  });
+
+  // 3. Supported answer renders
+  it("shows answer text after successful response", async () => {
+    mockPostAsk.mockResolvedValueOnce(mockAskResponse);
+    render(<AskForm />);
+    fireEvent.change(screen.getByLabelText(/your question/i), {
+      target: { value: "What are my rights if arrested?" },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /ask safespace/i }));
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId("ask-result")).toBeInTheDocument();
+    });
+    expect(screen.getByText(/right to know why you are being arrested/i)).toBeInTheDocument();
+  });
+
+  // 4. Source provenance renders
+  it("renders verified source information", async () => {
+    mockPostAsk.mockResolvedValueOnce(mockAskResponse);
+    render(<AskForm />);
+    fireEvent.change(screen.getByLabelText(/your question/i), {
+      target: { value: "What are my rights if arrested?" },
+    });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /ask safespace/i })); });
+    await waitFor(() => screen.getByTestId("ask-result"));
+    expect(screen.getByText(/constitution of kenya/i)).toBeInTheDocument();
+  });
+
+  // 5. AI disclosure renders
+  it("shows AI-assisted explanation disclosure when ai_used is true", async () => {
+    mockPostAsk.mockResolvedValueOnce(mockAskResponse);
+    render(<AskForm />);
+    fireEvent.change(screen.getByLabelText(/your question/i), {
+      target: { value: "What are my rights?" },
+    });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /ask safespace/i })); });
+    await waitFor(() => screen.getByTestId("ask-result"));
+    expect(screen.getByText(/ai-assisted explanation/i)).toBeInTheDocument();
+  });
+
+  // 6. ActionPaths render
+  it("renders action steps in the result", async () => {
+    mockPostAsk.mockResolvedValueOnce(mockAskResponse);
+    render(<AskForm />);
+    fireEvent.change(screen.getByLabelText(/your question/i), {
+      target: { value: "What are my rights?" },
+    });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /ask safespace/i })); });
+    await waitFor(() => screen.getByTestId("ask-result"));
+    expect(screen.getByText(/stay calm/i)).toBeInTheDocument();
+  });
+
+  // 7. SupportServices render
+  it("renders support service information", async () => {
+    mockPostAsk.mockResolvedValueOnce(mockAskResponse);
+    render(<AskForm />);
+    fireEvent.change(screen.getByLabelText(/your question/i), {
+      target: { value: "What are my rights?" },
+    });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /ask safespace/i })); });
+    await waitFor(() => screen.getByTestId("ask-result"));
+    expect(screen.getByText(/child helpline 116/i)).toBeInTheDocument();
+  });
+
+  // 8. Insufficient evidence state renders
+  it("renders answer for INSUFFICIENT evidence status", async () => {
+    mockPostAsk.mockResolvedValueOnce({
+      ...mockAskResponse,
+      evidence_status: "INSUFFICIENT" as const,
+      answer: "SafeSpace does not yet have enough verified information.",
+      ai_used: false,
+      rights: [],
+      sources: [],
+    });
+    render(<AskForm />);
+    fireEvent.change(screen.getByLabelText(/your question/i), {
+      target: { value: "What is the price of maize?" },
+    });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /ask safespace/i })); });
+    await waitFor(() => screen.getByTestId("ask-result"));
+    expect(screen.getByText(/not yet have enough verified/i)).toBeInTheDocument();
+  });
+
+  // 9. API failure fallback renders
+  it("shows error state when postAsk throws", async () => {
+    mockPostAsk.mockRejectedValueOnce(new Error("Network error"));
+    render(<AskForm />);
+    fireEvent.change(screen.getByLabelText(/your question/i), {
+      target: { value: "Help me." },
+    });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /ask safespace/i })); });
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toBeInTheDocument();
+    });
+  });
+
+  // 10. Question not written to browser storage
+  it("does not write question to localStorage or sessionStorage", async () => {
+    const spy = jest.spyOn(Storage.prototype, "setItem");
+    mockPostAsk.mockResolvedValueOnce(mockAskResponse);
+    render(<AskForm />);
+    fireEvent.change(screen.getByLabelText(/your question/i), {
+      target: { value: "A sensitive question." },
+    });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /ask safespace/i })); });
+    await waitFor(() => screen.getByTestId("ask-result"));
+    expect(spy).not.toHaveBeenCalled();
+    spy.mockRestore();
+  });
+
+  // 11. Start over clears result
+  it("clicking ask another question resets to idle", async () => {
+    mockPostAsk.mockResolvedValueOnce(mockAskResponse);
+    render(<AskForm />);
+    fireEvent.change(screen.getByLabelText(/your question/i), {
+      target: { value: "My question." },
+    });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /ask safespace/i })); });
+    await waitFor(() => screen.getByTestId("ask-result"));
+    fireEvent.click(screen.getByRole("button", { name: /ask another question/i }));
+    expect(screen.getByLabelText(/your question/i)).toBeInTheDocument();
+  });
+
+  // 12. HIGH risk changes presentation
+  it("shows risk banner for HIGH risk level", async () => {
+    mockPostAsk.mockResolvedValueOnce({
+      ...mockAskResponse,
+      risk_level: "HIGH" as const,
+      risk_action: "SHOW_HIGH_RISK_SUPPORT" as const,
+    });
+    render(<AskForm />);
+    fireEvent.change(screen.getByLabelText(/your question/i), {
+      target: { value: "Someone is hurting me." },
+    });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /ask safespace/i })); });
+    await waitFor(() => screen.getByTestId("ask-result"));
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByText(/concerning situation/i)).toBeInTheDocument();
   });
 });

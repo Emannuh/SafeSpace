@@ -147,3 +147,11 @@ CORS_ALLOWED_ORIGINS = [
     if o.strip()
 ]
 CORS_ALLOW_CREDENTIALS = False  # SafeSpace uses no cookies or auth tokens
+
+# ---------------------------------------------------------------------------
+# AI provider configuration (Day 5)
+# All AI calls are made from backend only — keys are never exposed to frontend.
+# ---------------------------------------------------------------------------
+AI_PROVIDER = os.getenv("AI_PROVIDER", "openai")
+AI_API_KEY  = os.getenv("AI_API_KEY", "")          # empty = AI disabled gracefully
+AI_MODEL    = os.getenv("AI_MODEL", "gpt-4o-mini")

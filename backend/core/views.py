@@ -181,3 +181,55 @@ def safety_check(request):
         "action":        best_match.action,
         "matched_rule":  best_match.name,
     })
+
+
+# ---------------------------------------------------------------------------
+# POST /api/v1/ask/
+# ---------------------------------------------------------------------------
+
+@api_view(["POST"])
+def ask(request):
+    """
+    Controlled AI question-answering endpoint.
+
+    Accepts: { "question": "..." }
+    Returns structured JSON including answer, evidence, sources, actions, support.
+
+    Pipeline (enforced order):
+      1. Validate input
+      2. Deterministic safety (RiskRules) — AI cannot bypass or downgrade this
+      3. Topic classification
+      4. VERIFIED evidence retrieval
+      5. AI explanation (only when evidence is sufficient)
+      6. Output validation
+      7. Structured response
+
+    The user question is NOT persisted. No user model is created.
+    An external AI provider may process the question when AI_API_KEY is set.
+    """
+    from core.services.answer_service import process_question
+
+    question = request.data.get("question", "")
+
+    if not isinstance(question, str) or not question.strip():
+        return Response(
+            {"error": "A non-empty 'question' string is required."},
+            status=http_status.HTTP_400_BAD_REQUEST,
+        )
+
+    result = process_question(question)
+
+    return Response({
+        "answer":          result.answer,
+        "evidence_status": result.evidence_status,
+        "risk_level":      result.risk_level,
+        "risk_action":     result.risk_action,
+        "ai_used":         result.ai_used,
+        "ai_disclosure":   result.ai_disclosure,
+        "journey":         result.journey,
+        "topic":           result.topic,
+        "rights":          result.rights,
+        "sources":         result.sources,
+        "actions":         result.actions,
+        "support_services": result.support_services,
+    })

@@ -96,3 +96,25 @@ export interface SafetyCheckResult {
   action: RiskAction;
   matched_rule: string | null;
 }
+
+// ---------------------------------------------------------------------------
+// Ask endpoint (Day 5)
+// ---------------------------------------------------------------------------
+
+export type EvidenceStatus = "SUPPORTED" | "PARTIAL" | "INSUFFICIENT";
+
+export interface AskResponse {
+  answer: string;
+  evidence_status: EvidenceStatus;
+  risk_level: RiskLevel;
+  risk_action: RiskAction;
+  ai_used: boolean;
+  ai_disclosure: string;
+  journey: Journey | null;
+  topic: Topic | null;
+  rights: RightsRecord[];
+  sources: LegalSource[];
+  actions: ActionPath[];
+  support_services: SupportService[];
+  error?: string | null;
+}
