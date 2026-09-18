@@ -291,7 +291,6 @@ describe("SafetyCheckForm", () => {
 // Add postAsk to the API mock — already included in the top-level mock above.
 
 import { postAsk } from "@/lib/api";
-import AskForm from "@/app/ask/AskForm";
 
 const mockPostAsk = postAsk as jest.Mock;
 

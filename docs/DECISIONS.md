@@ -167,3 +167,44 @@ Immediate-risk messages will bypass the normal informational response flow.
 Reason:
 
 A long legal explanation should not take priority over immediate safety and support information.
+
+---
+
+## ADR-012: No Vector Database at Day 6
+
+Status: Accepted
+
+Decision:
+
+SafeSpace continues to use deterministic keyword-based retrieval rather than introducing a vector database, embeddings, or semantic search.
+
+Reason:
+
+At Day 6, SafeSpace has 13 verified rights records across 3 journeys and 12 topics. The dataset is small, well-structured, and fully covered by keyword classification. Vector search adds significant architectural complexity (embedding generation, vector store management, similarity thresholds, opaque ranking) with no retrieval quality benefit at this scale.
+
+The keyword classifier is:
+- fully auditable (human can inspect every keyword)
+- fast (pure Python string operations)
+- deterministic (same question always retrieves the same evidence)
+- maintainable (extend by adding keywords, not by retraining models)
+
+This decision should be revisited when the number of rights records grows beyond approximately 100, or when keyword classification demonstrably fails to retrieve relevant evidence for legitimate user questions.
+
+---
+
+## ADR-013: Policy vs Legislation Distinction
+
+Status: Accepted
+
+Decision:
+
+SafeSpace maintains an explicit distinction between content sourced from primary legislation / constitutional provisions and content sourced from policy guidelines or government guidance.
+
+Reason:
+
+The National School Re-entry Guidelines (2020) are Ministry of Education policy, not primary legislation. Claims arising from them cannot be enforced in the same way as a statutory right. Presenting guideline obligations as equivalent to constitutional rights would mislead users about the strength of their legal position.
+
+Implementation:
+- LegalSource records use distinct `source_type` values: CONSTITUTION, LEGISLATION, GOVERNMENT_GUIDANCE, POLICY
+- All records sourced from guidelines include a `limitations` field noting the policy (not statutory) nature
+- The serialiser exposes `source_type_display` to the frontend so the distinction is visible in the UI

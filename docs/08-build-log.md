@@ -566,3 +566,118 @@ SafeSpace idea, journeys, problem scope, and product decisions remain entirely h
 ### Current Status at end of Day 5
 
 SafeSpace is now AI-enabled. The AI layer is grounded in verified retrieved evidence and cannot answer from general knowledge. 82 backend tests and 31 frontend tests pass. Production build passes.
+
+---
+
+## Day 6
+
+### Objective
+
+Expand the SafeSpace verified knowledge base from a single demonstration record (Child Justice — Arrest Rights) to cover all three original MVP journeys, so the retrieval-first AI system can support a representative range of user questions.
+
+### Journeys Created / Preserved
+
+| Journey | Status |
+|---|---|
+| Child Justice | Preserved and expanded (4 new topics added) |
+| Teenage Pregnancy | Created |
+| Sexual Exploitation and Abuse | Created |
+
+### Topics Created
+
+| Journey | Topic | Slug | Sort |
+|---|---|---|---|
+| Teenage Pregnancy | Staying in School While Pregnant | staying-in-school | 1 |
+| Teenage Pregnancy | School Re-entry After Delivery | school-reentry | 2 |
+| Teenage Pregnancy | National Examinations | national-examinations | 3 |
+| Teenage Pregnancy | Getting Appropriate Support | getting-support | 4 |
+| Sexual Exploitation | Understanding Sexual Exploitation | understanding-exploitation | 1 |
+| Sexual Exploitation | Sexual Abuse Involving a Child | sexual-abuse-child | 2 |
+| Sexual Exploitation | Safe Reporting Options | safe-reporting | 3 |
+| Sexual Exploitation | Getting Protection and Support | protection-support | 4 |
+| Child Justice | Arrest Rights | arrest-rights | 1 (existing) |
+| Child Justice | Legal Representation | legal-representation | 2 |
+| Child Justice | Parent or Guardian Involvement | parent-guardian-involvement | 3 |
+| Child Justice | Detention Protections | detention-protections | 4 |
+| Child Justice | Diversion | diversion | 5 |
+
+### Rights Records Created
+
+| Code | Journey | Topic | Source |
+|---|---|---|---|
+| CJ-001 | Child Justice | Arrest Rights | Constitution Art. 49 (existing, preserved) |
+| TP-SCHOOL-001 | Teenage Pregnancy | Staying in School | School Re-entry Guidelines 2020 |
+| TP-REENTRY-001 | Teenage Pregnancy | School Re-entry | School Re-entry Guidelines 2020 |
+| TP-EXAMS-001 | Teenage Pregnancy | National Examinations | School Re-entry Guidelines 2020 |
+| TP-SUPPORT-001 | Teenage Pregnancy | Getting Support | Children Act 2022, s.13 |
+| SEA-UNDERSTAND-001 | Sexual Exploitation | Understanding Exploitation | Sexual Offences Act s.8 |
+| SEA-ABUSE-001 | Sexual Exploitation | Sexual Abuse | Children Act 2022, s.16 |
+| SEA-REPORT-001 | Sexual Exploitation | Safe Reporting | Children Act 2022, s.16 |
+| SEA-PROTECT-001 | Sexual Exploitation | Protection/Support | Constitution Art. 53; Children Act s.16 |
+| CJ-LEGAL-001 | Child Justice | Legal Representation | Constitution Art. 50(2)(g) |
+| CJ-PARENT-001 | Child Justice | Parent/Guardian | Children Act 2022, s.222 |
+| CJ-DETAIN-001 | Child Justice | Detention Protections | Children Act s.226; Constitution Art. 51 |
+| CJ-DIVERT-001 | Child Justice | Diversion | Children Act 2022, ss.227–228 |
+
+### Legal Sources Added
+
+| Title | Type | Previously Seeded |
+|---|---|---|
+| Constitution of Kenya | CONSTITUTION | Yes (reused) |
+| Children Act, 2022 | LEGISLATION | No — new |
+| Sexual Offences Act, Cap. 63A | LEGISLATION | No — new |
+| National School Re-entry Guidelines, 2020 | GOVERNMENT_GUIDANCE | No — new |
+
+### Records Deliberately NOT Added
+
+| Proposed content | Reason |
+|---|---|
+| National Reproductive Health Policy claims | Requires human review — no specific propositions added |
+| SOA sections 9, 11, 12, 14–16, 16A, 20 | Require careful framing; flagged for human legal review |
+| Specific KNEC examination accommodation procedures | Not in approved source set |
+| Minor medical consent / confidentiality claims | Explicitly prohibited by Day 6 prompt |
+| Sentencing / penalty information | Outside SafeSpace scope |
+
+### Retrieval Changes
+
+`core/services/retrieval.py` expanded:
+- `_JOURNEY_KEYWORDS` updated: all three journeys with comprehensive keyword sets including edge cases (e.g. "can my parent or guardian be with me")
+- `_TOPIC_KEYWORDS` restructured as nested dict `{journey_slug: {topic_slug: [keywords]}}` — enables topic scoring within identified journey
+- Topic classification now uses score-based matching (not first-match) — best-matching topic wins
+- Support service selection now journey-aware: child justice adds LEGAL_AID, sexual exploitation adds GBV_SUPPORT, teenage pregnancy adds LEGAL_AID
+
+### Issues Encountered and Fixed
+
+1. `test_parent_question_retrieves_parent_evidence` failed — "Can my parent or guardian be with me?" did not match child-justice journey because the journey-level keywords relied on the phrase "parent guardian arrest" which the test question did not contain. Fixed by adding "parent or guardian", "can my parent", "can my guardian" to both journey-level and topic-level keyword sets.
+
+2. TypeScript build error `TS2300: Duplicate identifier 'AskForm'` — the Day 5 test append had accidentally re-imported `AskForm` a second time. Fixed by removing the duplicate import line from `__tests__/safespace.test.tsx`.
+
+### Test Results
+
+| Suite | Before | After | Result |
+|---|---|---|---|
+| Backend | 82 | 104 | ✅ 104/104 |
+| Frontend | 31 | 31 | ✅ 31/31 |
+| Build | PASS | PASS | ✅ |
+
+22 new backend tests covering: seed idempotency, all 12 topic retrieval classifiers, trust filtering, privacy, prompt injection resistance, IMMEDIATE risk bypass.
+
+### AI Coding Usage
+
+Kiro implemented: full `seed_demo.py` expansion (all 3 journeys, 12 topics, 13 records, actions), full `retrieval.py` classifier expansion, 22 new backend tests, and all documentation updates.
+
+Developer decisions included:
+- reviewing every proposed rights record against the approved source list before approving
+- explicitly flagging NRH Policy and additional SOA sections as requiring human legal review
+- approving the policy vs legislation distinction in TP records
+- deciding the risk levels for each record (MEDIUM for pregnancy, HIGH for exploitation/justice)
+- confirming the seed structure matches SafeSpace's data integrity policy
+- confirming all 104 test results and build output before proceeding
+
+SafeSpace idea, journeys, problem scope, and product decisions remain entirely human-originated.
+
+### Current Status at end of Day 6
+
+All three MVP journeys are represented in the verified knowledge base. The retrieval-first AI system can support representative questions across Teenage Pregnancy, Sexual Exploitation / Abuse, and Child Justice. 104 backend tests and 31 frontend tests pass. Production build passes.
+
+No AI, no vector database, no user authentication, no personal data collection introduced.
