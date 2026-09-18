@@ -681,3 +681,90 @@ SafeSpace idea, journeys, problem scope, and product decisions remain entirely h
 All three MVP journeys are represented in the verified knowledge base. The retrieval-first AI system can support representative questions across Teenage Pregnancy, Sexual Exploitation / Abuse, and Child Justice. 104 backend tests and 31 frontend tests pass. Production build passes.
 
 No AI, no vector database, no user authentication, no personal data collection introduced.
+
+---
+
+## Day 6 — Legal Integrity Correction
+
+### Objective
+
+Correct four records where the Day 6 engineering implementation used overbroad or incorrect legal citations. No new content was added. This correction was directed by human legal review of the generated propositions against the cited statutory sources.
+
+### Records Changed
+
+---
+
+**CJ-DETAIN-001 — Detention Protections**
+
+| | Before | After |
+|---|---|---|
+| Title | A child in detention must be held separately from adults and has specific rights | A child in detention has specific constitutional protections including separation from adults |
+| Legal reference | Children Act, 2022, Section 226; Constitution of Kenya, Article 51 | Constitution of Kenya, Article 53(1)(f) |
+| Section reference | s.226 — Separation from adults; Art. 51 — Rights of detained persons | Art. 53(1)(f) — Child's right not to be detained except as last resort |
+| Source key | children_act | constitution |
+
+**Reason:** Art. 53(1)(f) is the correct child-specific constitutional provision (detention as last resort, shortest period, separate from adults, conditions accounting for age and sex). Art. 51 is the general detained-persons provision — not child-specific. s.226 of the Children Act concerns diversion objectives, not the separate-from-adults detention rule.
+
+---
+
+**CJ-DIVERT-001 — Diversion**
+
+| | Before | After |
+|---|---|---|
+| Title | A child accused of a less serious offence may be eligible for diversion | A child may be considered for diversion if the legal requirements for diversion are met |
+| Legal reference | Children Act, 2022, Sections 227 and 228 | Children Act, 2022, Section 227 |
+| Section reference | s.227–228 — Diversion of child offenders | s.227 — Diversion eligibility and procedure |
+
+**Reason:** "Less serious offence" oversimplifies s.227, which contains specific eligibility requirements. The corrected wording is conservative and accurate: eligibility is governed by s.227 and is not guaranteed. s.228 (preliminary inquiry) was removed as primary authority.
+
+---
+
+**SEA-UNDERSTAND-001 — Understanding Sexual Exploitation**
+
+| | Before | After |
+|---|---|---|
+| Title | Sexual exploitation of a child is a criminal offence in Kenya | Defilement of a child is a criminal offence under Kenyan law |
+| Summary | "any sexual activity with a child under 18 is a criminal offence ... all forms of sexual exploitation" | Narrowed to what s.8 explicitly provides: defilement involving penetration |
+
+**Reason:** s.8 of the Sexual Offences Act specifically concerns defilement involving penetration. The original wording ("any sexual activity", "all forms of sexual exploitation") was overbroad — broader sexual-offence categories require sections not yet verified in SafeSpace (ss.9, 11, 14 etc). The corrected record is narrowed to what s.8 actually supports. The limitations field now explicitly notes this scope boundary.
+
+---
+
+**CJ-LEGAL-001 — Legal Representation**
+
+| | Before | After |
+|---|---|---|
+| Title | A child accused of an offence has the right to legal representation | A person accused of an offence has the right to choose and be represented by a lawyer |
+| Legal reference | Constitution of Kenya, Article 50(2)(g) | Constitution of Kenya, Article 50(2)(g) and Article 50(2)(h) |
+| Section reference | Art. 50(2)(g) — Right to legal representation | Art. 50(2)(g) — Right to choose a lawyer; Art. 50(2)(h) — State-funded legal representation |
+| State expense qualifier | "in serious cases" | "where substantial injustice would otherwise result" — the actual Art. 50(2)(h) threshold |
+
+**Reason:** Art. 50(2)(g) is the right to choose a lawyer. Art. 50(2)(h) provides for state-funded representation where "substantial injustice would otherwise result" — this is the correct threshold, not the vague "serious cases". Both sub-articles are now cited and their distinct functions explained.
+
+---
+
+### Records Audited and Confirmed Unchanged
+
+| Record | Finding |
+|---|---|
+| SEA-ABUSE-001 | Children Act s.16 correctly scoped for child protection from abuse |
+| SEA-REPORT-001 | s.16 as authority for reporting obligation — sound |
+| SEA-PROTECT-001 | Art. 53(1)(d) correctly cited for child's right to protection from abuse |
+| CJ-PARENT-001 | Children Act s.222 correctly cited for parental notification |
+
+---
+
+### Test Results After Correction
+
+| Suite | Result |
+|---|---|
+| `manage.py check` | ✅ 0 issues |
+| Backend | ✅ 104/104 in 8.000s |
+| Frontend (Jest) | ✅ 31/31 in 29.4s |
+| Production build | ✅ PASS — 7 routes, TypeScript clean |
+
+---
+
+### Human Direction
+
+This correction was directed by human legal review. The AI coding assistant (Kiro) made the changes as specified. The decision about which citations were incorrect and what the correct authority should be was a human product/legal decision.
