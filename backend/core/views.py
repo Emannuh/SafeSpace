@@ -233,3 +233,19 @@ def ask(request):
         "actions":         result.actions,
         "support_services": result.support_services,
     })
+
+
+# ---------------------------------------------------------------------------
+# GET /api/v1/health/
+# ---------------------------------------------------------------------------
+
+@api_view(["GET"])
+def health(request):
+    """
+    Minimal health/readiness endpoint.
+
+    Returns {"status": "ok"} when the application is running.
+    Exposes no secrets, credentials, environment details, or AI configuration.
+    Requires no database query or AI call.
+    """
+    return Response({"status": "ok"})

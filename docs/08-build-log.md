@@ -768,3 +768,112 @@ Correct four records where the Day 6 engineering implementation used overbroad o
 ### Human Direction
 
 This correction was directed by human legal review. The AI coding assistant (Kiro) made the changes as specified. The decision about which citations were incorrect and what the correct authority should be was a human product/legal decision.
+
+---
+
+## Day 7
+
+### Objective
+
+Release hardening and deployment readiness. No new features. Prepare the existing SafeSpace MVP for a reliable public/demo deployment.
+
+### Legal Integrity Gate — PASSED
+
+Before proceeding, confirmed the Day 6 legal corrections are present:
+- CJ-DETAIN-001: cites Art. 53(1)(f) ✅
+- CJ-DIVERT-001: "if the legal requirements for diversion are met" ✅
+- SEA-UNDERSTAND-001: narrowed to defilement (s.8 only) ✅
+
+### Deploy-Check Analysis
+
+Running `manage.py check --deploy` with local `.env` (DEBUG=True, HTTPS=False, placeholder SECRET_KEY) produced 7 issues initially:
+
+| Issue | Resolution |
+|---|---|
+| `mail.E001` MAILERS console backend | Fixed: email backend now switches on DEBUG — dummy in production |
+| `security.W004` HSTS not set | Fixed: enabled when `HTTPS=True` env var is set |
+| `security.W008` SSL redirect not set | Fixed: enabled when `HTTPS=True` |
+| `security.W009` SECRET_KEY too short | Inherent to local placeholder — production must use a strong key. Documented in README and .env.example |
+| `security.W012` SESSION_COOKIE_SECURE | Fixed: enabled when `HTTPS=True` |
+| `security.W016` CSRF_COOKIE_SECURE | Fixed: enabled when `HTTPS=True` |
+| `security.W018` DEBUG=True | Expected with local `.env`. Production defaults to False |
+
+Result: `manage.py check --deploy` with `SECRET_KEY=<50+ chars> DEBUG=False HTTPS=True ALLOWED_HOSTS=example.com` → **0 issues**.
+
+### Production Django Configuration Changes
+
+- Added `HTTPS` env var guard for all HTTPS-related security settings
+- Added `CSRF_TRUSTED_ORIGINS` (env-controlled)
+- Added `DATABASE_URL` support via `dj-database-url` (Railway/Heroku style)
+- Added `WhiteNoise` middleware for static file serving in production
+- Added `STATIC_ROOT` and `CompressedManifestStaticFilesStorage`
+- Fixed email backend: console in DEBUG mode, dummy in production (resolves `mail.E001`)
+- Added `SECURE_BROWSER_XSS_FILTER`, `SECURE_CONTENT_TYPE_NOSNIFF`, `X_FRAME_OPTIONS`
+
+### New Dependencies
+
+- `whitenoise==6.8.2` — static file serving
+- `dj-database-url==2.3.0` — DATABASE_URL parsing
+- `gunicorn==23.0.0` — production WSGI server
+
+### Health Endpoint
+
+- Added `GET /api/v1/health/` → `{"status": "ok"}`
+- No secrets, credentials, or configuration details exposed
+- No database or AI call required
+- 4 tests added
+
+### Deployment Files
+
+- `backend/railway.json` — Railway build and deploy configuration
+- `backend/Procfile` — WSGI start command with migrate + collectstatic
+- `backend/.env.example` — fully documented with all Day 7 variables
+- `frontend/.env.production.example` — production frontend env template
+- `frontend/next.config.ts` — updated with `output: "standalone"` for Railway/Vercel
+
+### README
+
+Rewrote `README.md` as a full repository landing page covering: problem, journeys, trust model, privacy, technology, local setup, environment variables, testing, database initialisation, deployment, API reference, limitations, and AI usage disclosure.
+
+### Test Results
+
+| Suite | Before | After | Result |
+|---|---|---|---|
+| Backend | 104 | 120 | ✅ 120/120 |
+| Frontend | 31 | 31 | ✅ 31/31 |
+| Build | PASS | PASS | ✅ |
+| `manage.py check` | 0 issues | 0 issues | ✅ |
+| `manage.py check --deploy` (prod env) | — | 0 issues | ✅ |
+
+16 new backend tests: health endpoint (4), production config (7), AI failure behaviour (5).
+
+### Bug Fixed
+
+`seed_demo.py` contained a Unicode `✓` checkmark that caused `UnicodeEncodeError` on Windows when called during Django tests (stdout uses `charmap` codec). Replaced with plain ASCII.
+
+### Files Created
+
+- `backend/railway.json`
+- `backend/Procfile`
+- `frontend/.env.production.example`
+
+### Files Modified
+
+- `backend/safespace_backend/settings.py` — production hardening
+- `backend/.env.example` — full documentation of all variables
+- `backend/requirements.txt` — whitenoise, dj-database-url, gunicorn added
+- `backend/core/views.py` — health endpoint added
+- `backend/core/urls.py` — /health/ registered
+- `backend/core/tests.py` — 16 new tests
+- `backend/core/management/commands/seed_demo.py` — Unicode fix
+- `frontend/next.config.ts` — standalone output, env forwarding
+- `README.md` — complete rewrite
+- `docs/08-build-log.md` — this entry
+
+### AI Coding Usage
+
+Kiro implemented all production configuration changes, deployment files, health endpoint, 16 new tests, README, and build log. The developer reviewed all deploy-check warnings and made decisions about which required code changes versus environment configuration. The decision to use Railway as the deployment target was human-directed.
+
+### Current Status at end of Day 7
+
+SafeSpace is deployment-ready. All production configuration is environment-controlled. Tests pass. Build passes. Deploy-check is clean with production env vars. Database initialisation is documented. README is complete.

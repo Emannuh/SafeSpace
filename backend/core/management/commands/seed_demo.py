@@ -1265,7 +1265,7 @@ class Command(BaseCommand):
             cj_journey, CJ_NEW_TOPICS, CJ_NEW_RECORDS, CJ_NEW_ACTIONS, src, svc_map
         )
 
-        self.stdout.write(self.style.SUCCESS("\n✓ Seed complete — all three MVP journeys loaded.\n"))
+        self.stdout.write(self.style.SUCCESS("\nSeed complete -- all three MVP journeys loaded.\n"))
         self.stdout.write(
             "Verify at:\n"
             "  GET  /api/v1/journeys/\n"

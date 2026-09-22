@@ -208,3 +208,45 @@ Implementation:
 - LegalSource records use distinct `source_type` values: CONSTITUTION, LEGISLATION, GOVERNMENT_GUIDANCE, POLICY
 - All records sourced from guidelines include a `limitations` field noting the policy (not statutory) nature
 - The serialiser exposes `source_type_display` to the frontend so the distinction is visible in the UI
+
+---
+
+## ADR-014: HTTPS Security Settings Gated on Environment Variable
+
+Status: Accepted
+
+Decision:
+
+All HTTPS-dependent security settings (SSL redirect, secure cookies, HSTS) are controlled by a single `HTTPS=True` environment variable rather than `DEBUG=False`.
+
+Reason:
+
+`DEBUG=False` does not reliably indicate HTTPS availability. A staging environment may have DEBUG=False but serve over HTTP. Enabling SSL redirect and HSTS on a non-HTTPS deployment would break the application. The `HTTPS` env var gives operators explicit control.
+
+---
+
+## ADR-015: WhiteNoise for Static File Serving
+
+Status: Accepted
+
+Decision:
+
+WhiteNoise is used for production static file serving rather than a CDN or separate static server.
+
+Reason:
+
+SafeSpace's Django admin and DRF browsable API require static files. WhiteNoise serves them directly from the Django process without requiring an external storage service, keeping the deployment architecture simple. A CDN can be added later if performance requires it.
+
+---
+
+## ADR-016: DATABASE_URL Takes Priority Over Individual DB Variables
+
+Status: Accepted
+
+Decision:
+
+If `DATABASE_URL` is set, it takes precedence over `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, and `DB_PORT`.
+
+Reason:
+
+Railway and Heroku provide PostgreSQL credentials as a single `DATABASE_URL`. Supporting this pattern enables straightforward platform deployment without custom parsing logic. Local development can continue to use individual variables.

@@ -39,4 +39,8 @@ urlpatterns = [
     # --- Ask (AI-assisted explanation) ---
     path("ask/",
          views.ask, name="ask"),
+
+    # --- Health / readiness ---
+    path("health/",
+         views.health, name="health"),
 ]

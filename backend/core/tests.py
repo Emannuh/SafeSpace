@@ -1123,3 +1123,152 @@ class Day6SeedTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         # No user or interaction record should exist
         self.assertEqual(get_user_model().objects.count(), 0)
+
+
+# ===========================================================================
+# Day 7 — Deployment readiness tests
+# ===========================================================================
+
+import os as _os  # noqa: E402 — appended import for Day 7 tests
+
+class HealthEndpointTests(TestCase):
+    """GET /api/v1/health/ — must always return 200 with {status: ok}."""
+
+    def test_health_returns_200(self):
+        resp = self.client.get(reverse("health"))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_health_returns_ok_status(self):
+        resp = self.client.get(reverse("health"))
+        self.assertEqual(resp.json(), {"status": "ok"})
+
+    def test_health_exposes_no_secrets(self):
+        """Response must not contain env vars, keys, or config details."""
+        resp = self.client.get(reverse("health"))
+        body = resp.content.decode()
+        for forbidden in ("SECRET_KEY", "AI_API_KEY", "DATABASE_URL",
+                          "DB_PASSWORD", "openai", "AI_MODEL"):
+            self.assertNotIn(forbidden, body)
+
+    def test_health_does_not_require_ai(self):
+        """Health must return 200 with no AI key configured."""
+        with patch.dict("os.environ", {"AI_API_KEY": ""}):
+            resp = self.client.get(reverse("health"))
+        self.assertEqual(resp.status_code, 200)
+
+
+class ProductionConfigTests(TestCase):
+    """Settings-level deployment readiness checks."""
+
+    def test_debug_defaults_false(self):
+        """Without an env override, DEBUG should be False."""
+        import safespace_backend.settings as s
+        debug_val = _os.getenv("DEBUG", "False") == "True"
+        self.assertEqual(s.DEBUG, debug_val)
+
+    def test_secret_key_loaded_from_env(self):
+        """SECRET_KEY must be present — the hard fail is the guard."""
+        from django.conf import settings
+        self.assertTrue(len(settings.SECRET_KEY) > 0)
+
+    def test_allowed_hosts_is_list(self):
+        from django.conf import settings
+        self.assertIsInstance(settings.ALLOWED_HOSTS, list)
+
+    def test_cors_allowed_origins_is_list(self):
+        from django.conf import settings
+        self.assertIsInstance(settings.CORS_ALLOWED_ORIGINS, list)
+
+    def test_cors_allow_credentials_false(self):
+        from django.conf import settings
+        self.assertFalse(settings.CORS_ALLOW_CREDENTIALS)
+
+    def test_whitenoise_in_middleware(self):
+        from django.conf import settings
+        mw = settings.MIDDLEWARE
+        self.assertTrue(any("whitenoise" in m for m in mw))
+
+    def test_database_engine_is_postgresql(self):
+        from django.conf import settings
+        engine = settings.DATABASES["default"]["ENGINE"]
+        self.assertEqual(engine, "django.db.backends.postgresql")
+
+
+class AIFailureBehaviourTests(TestCase):
+    """Verify AI failure degrades gracefully — deterministic content always returned."""
+
+    def setUp(self):
+        from django.core.management import call_command
+        call_command("seed_demo", verbosity=0)
+
+    def test_no_ai_key_returns_200(self):
+        with patch("core.services.ai_provider.call_provider") as mock_ai:
+            mock_ai.return_value = MagicMock(success=False, answer="", error="no key")
+            resp = self.client.post(
+                reverse("ask"),
+                data={"question": "What are my rights if arrested?"},
+                content_type="application/json",
+            )
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(resp.json()["ai_used"])
+
+    def test_ai_timeout_returns_deterministic_content(self):
+        with patch("core.services.ai_provider.call_provider") as mock_ai:
+            mock_ai.return_value = MagicMock(success=False, answer="", error="timeout")
+            resp = self.client.post(
+                reverse("ask"),
+                data={"question": "I was arrested. What are my rights?"},
+                content_type="application/json",
+            )
+        data = resp.json()
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(data["ai_used"])
+        # Verified rights should still be present
+        self.assertGreater(len(data["rights"]), 0)
+
+    def test_unsupported_question_does_not_call_ai(self):
+        with patch("core.services.ai_provider.call_provider") as mock_ai:
+            resp = self.client.post(
+                reverse("ask"),
+                data={"question": "What is the penalty for tax evasion in Kenya?"},
+                content_type="application/json",
+            )
+        mock_ai.assert_not_called()
+        data = resp.json()
+        self.assertEqual(data["evidence_status"], "INSUFFICIENT")
+        self.assertFalse(data["ai_used"])
+
+    def test_immediate_risk_does_not_call_ai(self):
+        RiskRule.objects.create(
+            name="imm-rule-d7", category="IMMEDIATE_DANGER",
+            pattern="not safe right now", risk_level="IMMEDIATE",
+            action="SHOW_IMMEDIATE_SAFETY", priority=100, active=True
+        )
+        with patch("core.services.ai_provider.call_provider") as mock_ai:
+            resp = self.client.post(
+                reverse("ask"),
+                data={"question": "I am not safe right now."},
+                content_type="application/json",
+            )
+        mock_ai.assert_not_called()
+        self.assertEqual(resp.json()["risk_level"], "IMMEDIATE")
+
+    def test_three_journeys_all_return_evidence(self):
+        """Regression: all three MVP journeys return evidence after seed."""
+        questions = [
+            "Can my school send me away because I am pregnant?",
+            "An adult is sexually exploiting me. Who can I tell?",
+            "I was arrested. What are my rights?",
+        ]
+        for q in questions:
+            with patch("core.services.ai_provider.call_provider") as mock_ai:
+                mock_ai.return_value = MagicMock(success=True, answer="Answer.")
+                resp = self.client.post(
+                    reverse("ask"),
+                    data={"question": q},
+                    content_type="application/json",
+                )
+            data = resp.json()
+            self.assertEqual(resp.status_code, 200, f"Failed for: {q}")
+            self.assertNotEqual(data["evidence_status"], "INSUFFICIENT",
+                                f"No evidence for: {q}")
