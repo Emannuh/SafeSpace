@@ -90,6 +90,16 @@ Structured response:
 
 ---
 
+## Live Demo
+
+- **Frontend:** https://safe-space-gmat5au2u-one-term.vercel.app
+- **Backend API:** https://safespace-backend-qmvn.onrender.com/api/v1/
+- **Health check:** https://safespace-backend-qmvn.onrender.com/api/v1/health/
+
+> Note: The backend runs on Render's free tier and may take ~30 seconds to wake up after inactivity. Load the health check URL first if the app feels slow on first open.
+
+---
+
 ## Local Development
 
 ### Prerequisites
