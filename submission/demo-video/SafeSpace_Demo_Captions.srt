@@ -1,0 +1,129 @@
+1
+00:00:00,000 --> 00:00:05,000
+Hi, I'm Emmanuel, and this is SafeSpace —
+
+2
+00:00:05,000 --> 00:00:10,000
+a trusted rights-information and protection platform
+for young people in Kenya.
+
+3
+00:00:10,000 --> 00:00:15,000
+Young people facing sensitive situations
+don't just need information.
+
+4
+00:00:15,000 --> 00:00:20,000
+They need information they can understand,
+verify, and safely act on.
+
+5
+00:00:20,000 --> 00:00:27,000
+SafeSpace is built around four principles:
+Understand, Verify, Act and Protect.
+
+6
+00:00:27,000 --> 00:00:35,000
+Unlike a conventional AI chatbot, SafeSpace does not
+treat AI as the source of legal truth.
+
+7
+00:00:35,000 --> 00:00:40,000
+Verified evidence is retrieved first, and AI only
+helps explain that evidence.
+
+8
+00:00:40,000 --> 00:00:48,000
+Here, a young person asks whether pregnancy means
+they can be sent away from school.
+
+9
+00:00:48,000 --> 00:00:55,000
+SafeSpace identifies the relevant journey and retrieves
+verified information from its curated Kenyan knowledge base.
+
+10
+00:00:55,000 --> 00:01:05,000
+It provides a plain-language explanation together with
+its source and appropriate next steps.
+
+11
+00:01:05,000 --> 00:01:15,000
+The user can see not only the answer, but exactly where
+that information came from and when it was last verified.
+
+12
+00:01:15,000 --> 00:01:23,000
+Sensitive safety questions are handled differently.
+
+13
+00:01:23,000 --> 00:01:30,000
+Before any AI generation, SafeSpace runs deterministic
+safety classification based on verified rules.
+
+14
+00:01:30,000 --> 00:01:40,000
+When elevated risk is detected, safety and appropriate
+support pathways become prominent.
+
+15
+00:01:40,000 --> 00:01:50,000
+The AI cannot downgrade this deterministic
+safety classification.
+
+16
+00:01:50,000 --> 00:01:58,000
+But information you can trust also means knowing
+when NOT to answer.
+
+17
+00:01:58,000 --> 00:02:06,000
+Tax law is outside SafeSpace's verified knowledge base.
+
+18
+00:02:06,000 --> 00:02:14,000
+Instead of asking AI to guess, SafeSpace returns
+an insufficient evidence response —
+
+19
+00:02:14,000 --> 00:02:20,000
+and does not call AI at all.
+
+20
+00:02:20,000 --> 00:02:28,000
+SafeSpace would rather say it does not have enough
+verified information than provide an unsupported answer.
+
+21
+00:02:28,000 --> 00:02:35,000
+No account is required to use SafeSpace.
+Questions are not intentionally persisted by the platform.
+
+22
+00:02:35,000 --> 00:02:40,000
+Quick Exit allows a user to leave the application immediately.
+
+23
+00:02:40,000 --> 00:02:50,000
+The MVP uses Django, PostgreSQL, Next.js and TypeScript,
+with controlled OpenAI integration.
+
+24
+00:02:50,000 --> 00:02:58,000
+The architecture creates a path toward locally verified
+knowledge packs for other jurisdictions.
+
+25
+00:02:58,000 --> 00:03:05,000
+SafeSpace demonstrates a different approach to AI
+for sensitive public information.
+
+26
+00:03:05,000 --> 00:03:10,000
+We don't ask AI what your rights are.
+We find verified rights information first.
+
+27
+00:03:10,000 --> 00:03:15,000
+That's SafeSpace: information you can understand,
+verify, act on — and trust.

@@ -1,27 +1,30 @@
 import SafetyCheckForm from "./SafetyCheckForm";
+import { Container, PageHeader } from "@/app/components/ui";
+import { InfoIcon, LockIcon } from "@/app/components/Icons";
 
 export default function SafetyPage() {
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
-      <header className="space-y-3 max-w-xl">
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Safety Check</h1>
-        <p className="text-slate-600 leading-relaxed">
-          Describe your situation briefly. SafeSpace will guide you to the
-          most relevant rights information and verified support.
-        </p>
-        <div className="space-y-1.5 text-sm text-slate-500">
-          <p className="flex items-start gap-2">
-            <span className="mt-0.5 shrink-0 w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600" aria-hidden="true">i</span>
-            This is not an emergency service. If you are in immediate danger, call <strong>999</strong> or <strong>112</strong>.
-          </p>
-          <p className="flex items-start gap-2">
-            <span className="mt-0.5 shrink-0 w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600" aria-hidden="true">🔒</span>
-            Your message is not stored by SafeSpace.
-          </p>
-        </div>
-      </header>
+    <Container className="space-y-8 py-10">
+      <PageHeader
+        title="Safety Check"
+        description="Describe your situation briefly. SafeSpace will guide you to the most relevant rights information and verified support."
+      >
+        <ul className="flex flex-col gap-2 pt-2 text-sm text-ink-soft sm:flex-row sm:gap-5" role="list">
+          <li className="flex items-start gap-2">
+            <InfoIcon size={16} className="mt-0.5 shrink-0 text-ink-faint" />
+            <span>
+              This is not an emergency service. If you are in immediate danger, call{" "}
+              <strong className="text-ink">999</strong> or <strong className="text-ink">112</strong>.
+            </span>
+          </li>
+          <li className="flex items-start gap-2 sm:shrink-0">
+            <LockIcon size={16} className="mt-0.5 shrink-0 text-ink-faint" />
+            <span>Your message is not stored by SafeSpace.</span>
+          </li>
+        </ul>
+      </PageHeader>
 
       <SafetyCheckForm />
-    </div>
+    </Container>
   );
 }

@@ -7,12 +7,20 @@ import Link from "next/link";
 import { fetchJourneys } from "@/lib/api";
 import type { Journey } from "@/lib/types";
 import { ErrorState } from "./components/StateViews";
+import { Container, SectionLabel } from "./components/ui";
+import {
+  ArrowRightIcon, CheckIcon, DocIcon, GraduationIcon, LockIcon,
+  ScaleIcon, ShieldIcon, SparkIcon,
+} from "./components/Icons";
 
-const journeyMeta: Record<string, { icon: string; colour: string }> = {
-  "child-justice":       { icon: "⚖️", colour: "bg-violet-50 border-violet-200" },
-  "teenage-pregnancy":   { icon: "🎓", colour: "bg-sky-50 border-sky-200" },
-  "sexual-exploitation": { icon: "🛡️", colour: "bg-teal-50 border-teal-200" },
+type IconComp = typeof ScaleIcon;
+
+const journeyMeta: Record<string, { Icon: IconComp; tint: string }> = {
+  "child-justice":       { Icon: ScaleIcon,      tint: "bg-violet-500/10 text-violet-600 dark:text-violet-300" },
+  "teenage-pregnancy":   { Icon: GraduationIcon, tint: "bg-sky-500/10 text-sky-600 dark:text-sky-300" },
+  "sexual-exploitation": { Icon: ShieldIcon,     tint: "bg-teal-500/10 text-teal-600 dark:text-teal-300" },
 };
+const fallbackMeta = { Icon: DocIcon, tint: "bg-sunken text-ink-soft" };
 
 async function JourneyCards() {
   let journeys: Journey[] = [];
@@ -29,32 +37,35 @@ async function JourneyCards() {
   }
 
   if (journeys.length === 0) {
-    return <p className="text-slate-500 text-sm">No journeys are available right now. Please check back soon.</p>;
+    return <p className="text-ink-soft text-sm">No journeys are available right now. Please check back soon.</p>;
   }
 
   return (
-    <ul className="space-y-3" role="list">
+    <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">
       {journeys.map((journey) => {
-        const meta = journeyMeta[journey.slug] ?? { icon: "📋", colour: "bg-slate-50 border-slate-200" };
+        const { Icon, tint } = journeyMeta[journey.slug] ?? fallbackMeta;
         return (
-          <li key={journey.slug}>
+          <li key={journey.slug} className="flex">
             <Link
               href={`/journeys/${journey.slug}`}
-              className="group block rounded-xl border bg-white p-4 hover:border-blue-300 hover:shadow-md transition-all duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
+              className="ss-card-link group flex w-full flex-col gap-4 p-5"
               aria-label={`Explore ${journey.name}`}
             >
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl border flex items-center justify-center text-2xl shrink-0 ${meta.colour}`} aria-hidden="true">
-                  {meta.icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-slate-900 group-hover:text-blue-700 transition-colors">{journey.name}</p>
-                  <p className="mt-0.5 text-sm text-slate-500 line-clamp-1">{journey.description}</p>
-                </div>
-                <svg className="w-5 h-5 text-slate-300 group-hover:text-blue-400 shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
+              <span className={`flex h-12 w-12 items-center justify-center rounded-2xl ${tint}`}>
+                <Icon size={24} />
+              </span>
+              <span className="flex-1 space-y-1.5">
+                <span className="block text-lg font-bold tracking-tight text-ink group-hover:text-brand-ink transition-colors">
+                  {journey.name}
+                </span>
+                <span className="block text-sm leading-relaxed text-ink-soft line-clamp-3">
+                  {journey.description}
+                </span>
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-ink">
+                Explore
+                <ArrowRightIcon size={16} className="transition-transform group-hover:translate-x-1" />
+              </span>
             </Link>
           </li>
         );
@@ -63,66 +74,130 @@ async function JourneyCards() {
   );
 }
 
+const pillars = [
+  { title: "Understand", body: "Plain-language explanations of your rights." },
+  { title: "Verify",     body: "Every answer links to its official Kenyan source." },
+  { title: "Act",        body: "Clear next steps you can take today." },
+  { title: "Protect",    body: "Verified helplines and support services." },
+];
+
 export default function HomePage() {
   return (
-    <div className="max-w-3xl mx-auto px-4 py-12 space-y-12">
+    <div className="relative">
+      {/* Decorative backdrop */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[520px] overflow-hidden"
+        aria-hidden="true"
+      >
+        <div className="absolute -top-40 left-1/2 h-[480px] w-[880px] -translate-x-1/2 rounded-full bg-brand/15 blur-3xl" />
+        <div className="absolute -top-10 right-[8%] h-64 w-64 rounded-full bg-teal-400/15 blur-3xl" />
+      </div>
 
-      {/* ── Hero ── */}
-      <section aria-labelledby="hero-heading" className="space-y-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 border border-blue-200 rounded-full text-xs font-medium text-blue-700">
-          <span aria-hidden="true">🇰🇪</span>
-          Built for young people in Kenya
-        </div>
-        <h1 id="hero-heading" className="text-3xl sm:text-4xl font-bold text-slate-900 leading-tight tracking-tight">
-          Understand your rights.<br />
-          <span className="text-blue-600">Know your options.</span>
-        </h1>
-        <p className="text-slate-600 text-lg max-w-xl leading-relaxed">
-          SafeSpace gives you clear, verified information about your rights —
-          and practical steps you can take. No account required.
-        </p>
-        <p className="flex items-center gap-2 text-sm text-slate-500">
-          <span className="w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-xs" aria-hidden="true">✓</span>
-          Built around verified Kenyan legal and institutional sources
-        </p>
-      </section>
+      <Container wide className="space-y-16 pt-12 pb-4 sm:pt-20">
 
-      {/* ── Journeys ── */}
-      <section aria-labelledby="journeys-heading" className="space-y-4">
-        <div className="ss-divider-label">
-          <span className="ss-section-label">Choose your journey</span>
-        </div>
-        {/* async Server Component */}
-        <JourneyCards />
-      </section>
+        {/* ── Hero ── */}
+        <section aria-labelledby="hero-heading" className="max-w-2xl space-y-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-brand-line bg-card/70 px-3.5 py-1.5 text-xs font-semibold text-brand-ink backdrop-blur">
+            <span className="flex gap-0.5" aria-hidden="true">
+              <span className="h-2.5 w-1 rounded-full bg-black dark:bg-white" />
+              <span className="h-2.5 w-1 rounded-full bg-red-600" />
+              <span className="h-2.5 w-1 rounded-full bg-green-700" />
+            </span>
+            Built for young people in Kenya
+          </div>
+          <h1
+            id="hero-heading"
+            className="text-4xl font-extrabold leading-[1.08] tracking-tight text-ink text-balance sm:text-6xl"
+          >
+            Understand your rights.{" "}
+            <span className="bg-linear-to-r from-brand to-teal-500 bg-clip-text text-transparent dark:from-brand-ink dark:to-teal-300">
+              Know your options.
+            </span>
+          </h1>
+          <p className="max-w-xl text-lg leading-relaxed text-ink-soft text-pretty sm:text-xl">
+            SafeSpace gives you clear, verified information about your rights —
+            and practical steps you can take. No account required.
+          </p>
+          <div className="flex flex-col gap-3 pt-1 sm:flex-row">
+            <Link href="/ask" className="ss-btn-primary px-6">
+              <SparkIcon size={16} />
+              Ask a question
+            </Link>
+            <Link href="/safety" className="ss-btn-secondary px-6">
+              <ShieldIcon size={16} />
+              Safety Check
+            </Link>
+          </div>
+          <p className="flex items-center gap-2 text-sm text-ink-soft">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-ok-bg text-ok-ink" aria-hidden="true">
+              <CheckIcon size={12} strokeWidth={3} />
+            </span>
+            Built around verified Kenyan legal and institutional sources
+          </p>
+        </section>
 
-      {/* ── Not sure ── */}
-      <section aria-labelledby="not-sure-heading" className="rounded-2xl border border-slate-200 bg-white p-6 space-y-3">
-        <h2 id="not-sure-heading" className="font-semibold text-slate-900">
-          Not sure where to start?
-        </h2>
-        <p className="text-sm text-slate-500 leading-relaxed">
-          Describe your situation briefly and SafeSpace will guide you to
-          the most relevant rights information and support.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3 pt-1">
-          <Link href="/safety" className="ss-btn-primary">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <path d="M7 1L2 3.5V7.5C2 10.09 4.24 12.5 7 13C9.76 12.5 12 10.09 12 7.5V3.5L7 1Z" fill="currentColor" fillOpacity="0.8"/>
-            </svg>
-            Safety Check
-          </Link>
-          <Link href="/support" className="ss-btn-secondary">
-            View Support Services
-          </Link>
-        </div>
-      </section>
+        {/* ── Journeys ── */}
+        <section aria-labelledby="journeys-heading" className="space-y-5">
+          <SectionLabel id="journeys-heading">Choose your journey</SectionLabel>
+          {/* async Server Component */}
+          <JourneyCards />
+        </section>
 
-      {/* ── Privacy footnote ── */}
-      <aside className="text-xs text-slate-400 border-t border-slate-100 pt-4">
-        No account required. SafeSpace minimises personal-data collection.
-        The Safety Check does not store your message.
-      </aside>
+        {/* ── How it works ── */}
+        <section aria-labelledby="how-heading" className="space-y-5">
+          <SectionLabel id="how-heading">How SafeSpace helps</SectionLabel>
+          <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" role="list">
+            {pillars.map((p, i) => (
+              <li key={p.title} className="ss-card space-y-2 p-5">
+                <span className="text-xs font-bold tabular-nums text-brand-ink">0{i + 1}</span>
+                <p className="font-bold text-ink">{p.title}</p>
+                <p className="text-sm leading-relaxed text-ink-soft">{p.body}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        {/* ── Not sure ── */}
+        <section
+          aria-labelledby="not-sure-heading"
+          className="relative overflow-hidden rounded-3xl bg-linear-to-br from-brand to-brand-strong p-7 text-white sm:p-10"
+        >
+          <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" aria-hidden="true" />
+          <div className="relative max-w-xl space-y-3">
+            <h2 id="not-sure-heading" className="text-2xl font-extrabold tracking-tight">
+              Not sure where to start?
+            </h2>
+            <p className="leading-relaxed text-white/85">
+              Describe your situation briefly and SafeSpace will guide you to
+              the most relevant rights information and support.
+            </p>
+            <div className="flex flex-col gap-3 pt-3 sm:flex-row">
+              <Link
+                href="/safety"
+                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-white px-6 text-[15px] font-semibold text-brand-strong transition-transform hover:bg-white/90 active:scale-[0.98]"
+              >
+                <ShieldIcon size={16} />
+                Safety Check
+              </Link>
+              <Link
+                href="/support"
+                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full border border-white/30 px-6 text-[15px] font-semibold text-white transition-colors hover:bg-white/10"
+              >
+                View Support Services
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Privacy footnote ── */}
+        <aside className="flex items-start gap-3 rounded-2xl border border-line bg-card p-4 text-sm text-ink-soft">
+          <LockIcon size={18} className="mt-0.5 shrink-0 text-ink-faint" />
+          <p>
+            No account required. SafeSpace minimises personal-data collection.
+            The Safety Check does not store your message.
+          </p>
+        </aside>
+      </Container>
     </div>
   );
 }

@@ -10,35 +10,37 @@ import { useState } from "react";
 import Link from "next/link";
 import { postSafetyCheck } from "@/lib/api";
 import type { RiskLevel, SafetyCheckResult } from "@/lib/types";
+import {
+  AlertIcon, ArrowLeftIcon, InfoIcon, ShieldIcon, SirenIcon, SpinnerIcon,
+} from "@/app/components/Icons";
 
 type Status = "idle" | "loading" | "result" | "error";
 
 const riskStyles: Record<RiskLevel, {
-  wrapper: string; icon: string; iconBg: string;
-  heading: string; body: string; label: string;
+  wrapper: string; Icon: typeof InfoIcon; iconBg: string; chip: string; label: string;
 }> = {
   LOW: {
-    wrapper: "border-slate-200 bg-white",
-    icon: "ℹ️", iconBg: "bg-slate-100",
-    heading: "text-slate-900", body: "text-slate-600",
+    wrapper: "border-line bg-card text-ink",
+    Icon: InfoIcon, iconBg: "bg-sunken text-ink-soft",
+    chip: "bg-sunken text-ink-soft border-line",
     label: "General information",
   },
   MEDIUM: {
-    wrapper: "border-amber-200 bg-amber-50",
-    icon: "⚠️", iconBg: "bg-amber-100",
-    heading: "text-amber-900", body: "text-amber-800",
+    wrapper: "border-warn-line bg-warn-bg text-warn-ink",
+    Icon: ShieldIcon, iconBg: "bg-card text-warn-ink",
+    chip: "bg-card text-warn-ink border-warn-line",
     label: "Some concern — support available",
   },
   HIGH: {
-    wrapper: "border-orange-200 bg-orange-50",
-    icon: "🔶", iconBg: "bg-orange-100",
-    heading: "text-orange-900", body: "text-orange-800",
+    wrapper: "border-alert-line bg-alert-bg text-alert-ink",
+    Icon: AlertIcon, iconBg: "bg-card text-alert-ink",
+    chip: "bg-card text-alert-ink border-alert-line",
     label: "High concern — seek support",
   },
   IMMEDIATE: {
-    wrapper: "border-red-300 bg-red-50",
-    icon: "🚨", iconBg: "bg-red-100",
-    heading: "text-red-900", body: "text-red-800",
+    wrapper: "border-danger-line bg-danger-bg text-danger-ink",
+    Icon: SirenIcon, iconBg: "bg-card text-danger-ink",
+    chip: "bg-card text-danger-ink border-danger-line",
     label: "Immediate safety concern",
   },
 };
@@ -66,45 +68,39 @@ function ResultPanel({ result }: { result: SafetyCheckResult }) {
   const s = riskStyles[result.risk_level];
   const m = riskMessages[result.risk_level];
   const showSupport = result.risk_level !== "LOW";
+  const { Icon } = s;
 
   return (
     <div
-      className={`rounded-xl border ${s.wrapper} p-5 space-y-4`}
+      className={`space-y-5 rounded-2xl border p-5 sm:p-6 ${s.wrapper}`}
       role="alert"
       aria-live="assertive"
     >
       {/* Icon + heading */}
-      <div className="flex items-start gap-3">
-        <div className={`w-9 h-9 rounded-full ${s.iconBg} flex items-center justify-center text-lg shrink-0`} aria-hidden="true">
-          {s.icon}
+      <div className="flex items-start gap-4">
+        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${s.iconBg}`} aria-hidden="true">
+          <Icon size={22} />
         </div>
-        <div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <h2 className={`font-semibold text-base ${s.heading}`}>{m.heading}</h2>
-            <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${
-              result.risk_level === "LOW" ? "bg-slate-100 text-slate-600 border-slate-200" :
-              result.risk_level === "MEDIUM" ? "bg-amber-100 text-amber-700 border-amber-200" :
-              result.risk_level === "HIGH" ? "bg-orange-100 text-orange-700 border-orange-200" :
-              "bg-red-100 text-red-700 border-red-200"
-            }`}>
-              {s.label}
-            </span>
+        <div className="space-y-1.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-lg font-bold tracking-tight">{m.heading}</h2>
+            <span className={`ss-chip ${s.chip}`}>{s.label}</span>
           </div>
-          <p className={`mt-1 text-sm leading-relaxed ${s.body}`}>{m.body}</p>
+          <p className="leading-relaxed opacity-90">{m.body}</p>
         </div>
       </div>
 
       {/* Disclaimer */}
-      <p className="text-xs text-slate-500 italic border-t border-black/5 pt-3">
+      <p className="border-t border-current/10 pt-4 text-xs italic opacity-80">
         This is a structured safety guide — not a diagnosis of your situation.
         SafeSpace cannot determine exactly what is happening.
         {result.risk_level === "IMMEDIATE" && (
-          <strong className="text-red-700"> If you are in immediate danger, call 999 or 112.</strong>
+          <strong className="not-italic"> If you are in immediate danger, call 999 or 112.</strong>
         )}
       </p>
 
       {/* Actions */}
-      <div className="flex flex-col sm:flex-row gap-3 pt-1">
+      <div className="flex flex-col gap-3 sm:flex-row">
         {showSupport && (
           <Link href="/support" className="ss-btn-primary">
             View Support Services
@@ -145,13 +141,13 @@ export default function SafetyCheckForm() {
   }
 
   return (
-    <div className="space-y-6 max-w-xl">
+    <div className="max-w-2xl space-y-6">
 
       {/* Form */}
       {status !== "result" && (
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          <div className="space-y-1.5">
-            <label htmlFor="safety-message" className="block text-sm font-semibold text-slate-800">
+        <form onSubmit={handleSubmit} className="ss-card space-y-4 p-5 sm:p-6" noValidate>
+          <div className="space-y-2">
+            <label htmlFor="safety-message" className="block font-bold text-ink">
               Describe your situation briefly
             </label>
             <textarea
@@ -161,13 +157,13 @@ export default function SafetyCheckForm() {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="e.g. I was arrested and I don't know my rights…"
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none shadow-sm"
+              className="ss-input"
               aria-describedby="safety-hint"
               disabled={status === "loading"}
               autoComplete="off"
               autoSave="off"
             />
-            <p id="safety-hint" className="text-xs text-slate-400">
+            <p id="safety-hint" className="text-xs text-ink-faint">
               Your message is not stored. Do not include full names, ID numbers, or other identifying information.
             </p>
           </div>
@@ -175,15 +171,12 @@ export default function SafetyCheckForm() {
           <button
             type="submit"
             disabled={!message.trim() || status === "loading"}
-            className="ss-btn-primary"
+            className="ss-btn-primary w-full sm:w-auto"
             aria-busy={status === "loading"}
           >
             {status === "loading" ? (
               <>
-                <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25"/>
-                  <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
-                </svg>
+                <SpinnerIcon />
                 Checking…
               </>
             ) : "Check my situation"}
@@ -193,9 +186,12 @@ export default function SafetyCheckForm() {
 
       {/* Error */}
       {status === "error" && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">
-          We couldn&apos;t complete the safety check right now. Please try again, or go directly to{" "}
-          <Link href="/support" className="underline font-medium">Support Services</Link>.
+        <div className="flex items-start gap-3 rounded-2xl border border-danger-line bg-danger-bg p-4 text-sm text-danger-ink" role="alert">
+          <AlertIcon size={18} className="mt-0.5 shrink-0" />
+          <span>
+            We couldn&apos;t complete the safety check right now. Please try again, or go directly to{" "}
+            <Link href="/support" className="font-semibold underline">Support Services</Link>.
+          </span>
         </div>
       )}
 
@@ -206,9 +202,10 @@ export default function SafetyCheckForm() {
       {status === "result" && (
         <button
           onClick={handleReset}
-          className="text-sm text-slate-500 hover:text-blue-700 underline transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-soft transition-colors hover:text-brand-ink"
         >
-          ← Start over
+          <ArrowLeftIcon size={15} />
+          Start over
         </button>
       )}
     </div>

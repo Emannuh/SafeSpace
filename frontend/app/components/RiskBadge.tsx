@@ -1,10 +1,10 @@
 import type { RiskLevel } from "@/lib/types";
 
 const styles: Record<RiskLevel, string> = {
-  LOW:       "bg-slate-100 text-slate-700",
-  MEDIUM:    "bg-amber-100 text-amber-800",
-  HIGH:      "bg-orange-100 text-orange-800",
-  IMMEDIATE: "bg-red-100 text-red-800",
+  LOW:       "bg-sunken text-ink-soft border-line",
+  MEDIUM:    "bg-warn-bg text-warn-ink border-warn-line",
+  HIGH:      "bg-alert-bg text-alert-ink border-alert-line",
+  IMMEDIATE: "bg-danger-bg text-danger-ink border-danger-line",
 };
 
 const labels: Record<RiskLevel, string> = {
@@ -22,9 +22,10 @@ interface Props {
 export default function RiskBadge({ level, className = "" }: Props) {
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${styles[level]} ${className}`}
+      className={`ss-chip ${styles[level]} ${className}`}
       aria-label={`Risk level: ${labels[level]}`}
     >
+      <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
       {labels[level]}
     </span>
   );
